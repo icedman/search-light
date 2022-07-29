@@ -63,7 +63,15 @@ class Extension {
       this._toggle_search_light.bind(this)
     );
 
-    // this._add_events();
+    if (!this._inOverview) {
+      this._overViewEvents = [];
+      this._overViewEvents.push(
+        Main.overview.connect('showing', this._onOverviewShowing.bind(this))
+      );
+      this._overViewEvents.push(
+        Main.overview.connect('hidden', this._onOverviewHidden.bind(this))
+      );
+    }
 
     log('enabled');
   }
@@ -83,15 +91,23 @@ class Extension {
       this.container.destroy();
       this.container = null;
     }
+
+    if (this._overViewEvents && !this._inOverview) {
+      this._overViewEvents.forEach((id) => {
+        Main.overview.disconnect(id);
+      });
+      this._overViewEvents = [];
+    }
   }
 
   _acquire_ui() {
     if (this._entry) return;
 
-    this._entry =
-      Main.uiGroup.find_child_by_name(
-        'overview'
-      ).first_child.first_child.first_child;
+    // todo!
+    this._entry = Main.overview.searchEntry;
+    // Main.uiGroup.find_child_by_name(
+    //   'overview'
+    // ).first_child.first_child.first_child;
     this._entryParent = this._entry.get_parent();
 
     this._search = Main.uiGroup.find_child_by_name('searchController');
@@ -197,26 +213,9 @@ class Extension {
         this._onFullScreen.bind(this)
       )
     );
-
-    if (!this._inOverview) {
-      this._overViewEvents = [];
-      this._overViewEvents.push(
-        Main.overview.connect('showing', this._onOverviewShowing.bind(this))
-      );
-      this._overViewEvents.push(
-        Main.overview.connect('hidden', this._onOverviewHidden.bind(this))
-      );
-    }
   }
 
   _remove_events() {
-    if (this._overViewEvents && !this._inOverview) {
-      this._overViewEvents.forEach((id) => {
-        Main.overview.disconnect(id);
-      });
-      this._overViewEvents = [];
-    }
-
     if (this._displayEvents) {
       this._displayEvents.forEach((id) => {
         global.display.disconnect(id);

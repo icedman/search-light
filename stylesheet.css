@@ -2,11 +2,14 @@
   padding: 20px;
   border-radius: 16px;
   border: 1px solid #3c3c3c;
-  box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
   background: rgba(20, 20, 20, 0.95);
 }
 
+#searchLightContainer > StEntry:focus,
 #searchLightContainer > StEntry {
-	margin-top: 0px;
-	border-radius: 16px;
+	margin-top: 0px !important;
+	border-radius: 8px;
+  border: 0px !important;
+  border-width: 0px !important;
 }
