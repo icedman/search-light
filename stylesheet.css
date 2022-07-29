@@ -1,8 +1,6 @@
-/* Add your custom extension styling here */
-
 #searchLightContainer {
 	padding: 20px;
-	background: rgba(20, 20, 20, 0.85);
+	background: rgba(20, 20, 20, 0.75);
 	border-radius: 12px;
 }
 

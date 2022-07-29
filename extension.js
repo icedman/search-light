@@ -45,6 +45,7 @@ class Extension {
     this._entryParent = this._entry.get_parent();
 
     this._search = Main.uiGroup.find_child_by_name('searchController');
+    this._searchResults = this._search._searchResults;
     this._searchParent = this._search.get_parent();
 
     this.container = new St.BoxLayout({
@@ -97,6 +98,10 @@ class Extension {
     this.container.add_child(this._entry);
     this._search.get_parent().remove_child(this._search);
     this.container.add_child(this._search);
+    if (!this._search.__searchCancelled) {
+      this._search.__searchCancelled = this._search._searchCancelled;
+      this._search._searchCancelled = () => {}
+    }
   }
 
   _release_ui() {
@@ -109,6 +114,12 @@ class Extension {
       this._search.get_parent().remove_child(this._search);
       this._searchParent.add_child(this._search);
     }
+
+    if (this._search.__searchCancelled) {
+      this._search._searchCancelled = this._search.__searchCancelled;
+      this._search.__searchCancelled = null;
+    }
+
     this.container.hide();
   }
 
@@ -132,6 +143,7 @@ class Extension {
 
   hide() {
     this._visible = false;
+    this._search.hide();
     this.container.hide();
   }
 
@@ -149,6 +161,14 @@ class Extension {
   }
 
   _add_events() {
+    this._stageEvents = [];
+    this._stageEvents.push(
+      global.stage.connect(
+        'notify::key-focus',
+        this._onKeyFocusChanged.bind(this)
+      )
+    );
+
     this._displayEvents = [];
     this._displayEvents.push(
       global.display.connect(
@@ -188,6 +208,13 @@ class Extension {
       });
     }
     this._displayEvents = [];
+
+    if (this._stageEvents) {
+      this._stageEvents.forEach((id) => {
+        global.stage.disconnect(id);
+      });
+    }
+    this._stageEvents = [];
   }
 
   _onOverviewShowing() {
@@ -201,9 +228,18 @@ class Extension {
   }
 
   _onFocusWindow(w, e) {
-    this._last_focus_event = e;
-    let focusWindow = global.display.focus_window;
-    if (focusWindow) {
+    // this._last_focus_event = e;
+    // let focusWindow = global.display.focus_window;
+    // if (focusWindow) {
+    //   this.hide();
+    // }
+  }
+
+  _onKeyFocusChanged() {
+    let focus = global.stage.get_key_focus();
+    let appearFocused = this._entry.contains(focus) ||
+                     this._searchResults.contains(focus);
+    if (!appearFocused) {
       this.hide();
     }
   }
