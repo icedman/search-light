@@ -1,0 +1,11 @@
+/* Add your custom extension styling here */
+
+#searchLightContainer {
+	padding: 20px;
+	background: rgba(20, 20, 20, 0.85);
+	border-radius: 12px;
+}
+
+#searchLightContainer > StEntry {
+	margin-top: 0px;
+}
