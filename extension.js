@@ -38,26 +38,17 @@ class Extension {
   }
 
   enable() {
-    this._entry =
-      Main.uiGroup.find_child_by_name(
-        'overview'
-      ).first_child.first_child.first_child;
-    this._entryParent = this._entry.get_parent();
-
-    this._search = Main.uiGroup.find_child_by_name('searchController');
-    this._searchResults = this._search._searchResults;
-    this._searchParent = this._search.get_parent();
-
     this.container = new St.BoxLayout({
       name: 'searchLightContainer',
       vertical: true,
     });
+    this.container.add_style_class_name('dash');
     this.hide();
     this.container._delegate = this;
 
     Main.uiGroup.add_child(this.container);
 
-    this._acquire_ui();
+    // this._acquire_ui();
 
     this.accel = new KeyboardShortcuts();
     this.accel.enable();
@@ -72,7 +63,7 @@ class Extension {
       this._toggle_search_light.bind(this)
     );
 
-    this._add_events();
+    // this._add_events();
 
     log('enabled');
   }
@@ -84,18 +75,29 @@ class Extension {
       this.accel = null;
     }
 
-    this._release_ui();
+    // this will release the ui
+    this.hide();
 
     if (this.container) {
       this.container.get_parent().remove_child(this.container);
       this.container.destroy();
       this.container = null;
     }
-
-    this._remove_events();
   }
 
   _acquire_ui() {
+    if (this._entry) return;
+
+    this._entry =
+      Main.uiGroup.find_child_by_name(
+        'overview'
+      ).first_child.first_child.first_child;
+    this._entryParent = this._entry.get_parent();
+
+    this._search = Main.uiGroup.find_child_by_name('searchController');
+    this._searchResults = this._search._searchResults;
+    this._searchParent = this._search.get_parent();
+
     this._entry.get_parent().remove_child(this._entry);
     this.container.add_child(this._entry);
     this._search.get_parent().remove_child(this._search);
@@ -104,22 +106,34 @@ class Extension {
       this._search.__searchCancelled = this._search._searchCancelled;
       this._search._searchCancelled = () => {};
     }
+    this._textChangedEventId = this._search._text.connect(
+      'text-changed',
+      () => {
+        this._search.show();
+      }
+    );
   }
 
   _release_ui() {
     if (this._entry) {
       this._entry.get_parent().remove_child(this._entry);
       this._entryParent.add_child(this._entry);
+      this._entry = null;
     }
 
     if (this._search) {
+      this._search.hide();
       this._search.get_parent().remove_child(this._search);
       this._searchParent.add_child(this._search);
-    }
-
-    if (this._search.__searchCancelled) {
-      this._search._searchCancelled = this._search.__searchCancelled;
-      this._search.__searchCancelled = null;
+      if (this._textChangedEventId) {
+        this._search._text.disconnect(this._textChangedEventId);
+        this._textChangedEventId = null;
+      }
+      if (this._search.__searchCancelled) {
+        this._search._searchCancelled = this._search.__searchCancelled;
+        this._search.__searchCancelled = null;
+      }
+      this._search = null;
     }
 
     this.container.hide();
@@ -132,6 +146,7 @@ class Extension {
   }
 
   show() {
+    this._acquire_ui();
     this._queryDisplay();
     let width = 800;
     let height = 600;
@@ -141,12 +156,15 @@ class Extension {
     this.container.set_size(width, height);
     this.container.set_position(x, y);
     this.container.show();
+
+    this._add_events();
   }
 
   hide() {
     this._visible = false;
-    // this._search.hide();
     this.container.hide();
+    this._release_ui();
+    this._remove_events();
   }
 
   _toggle_search_light() {
@@ -154,8 +172,6 @@ class Extension {
     if (!this._visible) {
       this.show();
       global.stage.set_key_focus(this._entry);
-    } else {
-      this.hide();
     }
   }
 
@@ -226,15 +242,10 @@ class Extension {
     this._inOverview = false;
   }
 
-  _onFocusWindow(w, e) {
-    // this._last_focus_event = e;
-    // let focusWindow = global.display.focus_window;
-    // if (focusWindow) {
-    //   this.hide();
-    // }
-  }
+  _onFocusWindow(w, e) {}
 
   _onKeyFocusChanged() {
+    if (!this._entry) return;
     let focus = global.stage.get_key_focus();
     let appearFocused =
       this._entry.contains(focus) || this._searchResults.contains(focus);
