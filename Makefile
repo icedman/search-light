@@ -6,8 +6,8 @@ build:
 	echo "glib-compile-schemas --strict --targetdir=schemas/ schemas"
 
 install:
-	mkdir -p ~/.local/share/gnome-shell/extensions/suppress-startup-animation/
-	cp -R ./* ~/.local/share/gnome-shell/extensions/suppress-startup-animation/
+	mkdir -p ~/.local/share/gnome-shell/extensions/search-light@icedman.github.com/
+	cp -R ./* ~/.local/share/gnome-shell/extensions/search-light@icedman.github.com/
 
 publish:
 	rm -rf build
@@ -20,7 +20,7 @@ publish:
 	echo "cp -R schemas ./build"
 	rm -rf ./*.zip
 	cd build ; \
-	zip -qr ../suppress-startup-animation.zip .
+	zip -qr ../search-light@icedman.github.com.zip .
 
 lint:
 	eslint ./
