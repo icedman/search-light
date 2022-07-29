@@ -6,45 +6,40 @@ const Main = imports.ui.main;
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
 
-// const Logger = Me.imports.logger.Logger;
+// from https://stackoverflow.com/questions/12325405/gnome-shell-extension-key-binding
 
 var KeyboardShortcuts = class KeyboardShortcuts {
-  constructor() {
-    // this.logger = new Logger('kt kbshortcuts', settings);
-  }
+  constructor() {}
 
   enable() {
     this._grabbers = {};
     this._eventId = global.display.connect(
       'accelerator-activated',
       (display, action, deviceId, timestamp) => {
-        // this.logger.debug("Accelerator Activated: [display=%s, action=%s, deviceId=%s, timestamp=%s]",
-        //   display, action, deviceId, timestamp)
         this._onAccelerator(action);
       }
     );
   }
 
   disable() {
-    global.display.disconnect(this._eventId);
+    if (this._grabbers) {
+      Object.keys(this._grabbers).forEach((k) => {
+        // what the post in stackoverflow doesn't show is proper clean.. ungrab!
+        global.display.ungrab_accelerator(k);
+      });
+    }
     this._grabbers = {};
+    global.display.disconnect(this._eventId);
   }
 
   listenFor(accelerator, callback) {
-    // this.logger.debug('Trying to listen for hot key [accelerator=%s]', accelerator);
     let action = global.display.grab_accelerator(accelerator, 0);
-
     if (action == Meta.KeyBindingAction.NONE) {
-      // this.logger.error('Unable to grab accelerator [%s]', accelerator);
+      log(`Unable to grab accelerator ${accelerator}`);
       return;
     }
 
-    // this.logger.debug('Grabbed accelerator [action={}]', action);
     let name = Meta.external_binding_name_for_action(action);
-    // this.logger.debug('Received binding name for action [name=%s, action=%s]',
-    //     name, action)
-
-    // this.logger.debug('Requesting WM to allow binding [name=%s]', name)
     Main.wm.allowKeybinding(name, Shell.ActionMode.ALL);
 
     this._grabbers[action] = {
@@ -60,7 +55,7 @@ var KeyboardShortcuts = class KeyboardShortcuts {
     if (grabber) {
       grabber.callback();
     } else {
-      // this.logger.debug('No listeners [action=%s]', action);
+      log(`No listeners ${action}`);
     }
   }
 };

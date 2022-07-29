@@ -1,9 +1,12 @@
 #searchLightContainer {
-	padding: 20px;
-	background: rgba(20, 20, 20, 0.75);
-	border-radius: 12px;
+  padding: 20px;
+  border-radius: 16px;
+  border: 1px solid #3c3c3c;
+  box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.1);
+  background: rgba(20, 20, 20, 0.95);
 }
 
 #searchLightContainer > StEntry {
 	margin-top: 0px;
+	border-radius: 16px;
 }

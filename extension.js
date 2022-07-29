@@ -73,6 +73,8 @@ class Extension {
     );
 
     this._add_events();
+
+    log('enabled');
   }
 
   disable() {
@@ -143,14 +145,11 @@ class Extension {
 
   hide() {
     this._visible = false;
-    this._search.hide();
+    // this._search.hide();
     this.container.hide();
   }
 
   _toggle_search_light() {
-    log('toggle');
-    log(this._inOverview);
-    log(this._visible);
     if (this._inOverview) return;
     if (!this._visible) {
       this.show();
