@@ -100,7 +100,7 @@ class Extension {
     this.container.add_child(this._search);
     if (!this._search.__searchCancelled) {
       this._search.__searchCancelled = this._search._searchCancelled;
-      this._search._searchCancelled = () => {}
+      this._search._searchCancelled = () => {};
     }
   }
 
@@ -237,8 +237,8 @@ class Extension {
 
   _onKeyFocusChanged() {
     let focus = global.stage.get_key_focus();
-    let appearFocused = this._entry.contains(focus) ||
-                     this._searchResults.contains(focus);
+    let appearFocused =
+      this._entry.contains(focus) || this._searchResults.contains(focus);
     if (!appearFocused) {
       this.hide();
     }
