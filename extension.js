@@ -18,7 +18,7 @@
 
 /* exported init */
 
-const GETTEXT_DOMAIN = 'my-indicator-extension';
+const GETTEXT_DOMAIN = 'com.github.icedman.search-light';
 
 const { GObject, St } = imports.gi;
 
@@ -53,10 +53,10 @@ class Extension {
     this.accel = new KeyboardShortcuts();
     this.accel.enable();
 
-    this.accel.listenFor(
-      '<ctrl><super>T',
-      this._toggle_search_light.bind(this)
-    );
+    // this.accel.listenFor(
+    //   '<ctrl><super>T',
+    //   this._toggle_search_light.bind(this)
+    // );
     this.accel.listenFor('<super>Space', this._toggle_search_light.bind(this));
     this.accel.listenFor(
       '<ctrl><super>Space',
