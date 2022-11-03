@@ -3,7 +3,7 @@ all: build install lint
 .PHONY: build install
 
 build:
-	echo "glib-compile-schemas --strict --targetdir=schemas/ schemas"
+	glib-compile-schemas --strict --targetdir=schemas/ schemas
 
 install:
 	mkdir -p ~/.local/share/gnome-shell/extensions/search-light@icedman.github.com/
@@ -17,10 +17,13 @@ publish:
 	cp metadata.json ./build
 	cp stylesheet.css ./build
 	cp README.md ./build
-	echo "cp -R schemas ./build"
+	cp -R schemas ./build
 	rm -rf ./*.zip
 	cd build ; \
 	zip -qr ../search-light@icedman.github.com.zip .
+
+test-prefs:
+	gnome-extensions prefs search-light@icedman.github.com
 
 lint:
 	eslint ./

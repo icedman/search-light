@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist gettext-domain="search-light">
+  <schema path="/org/gnome/shell/extensions/search-light/" id="org.gnome.shell.extensions.search-light">
+    <key type="d" name="border-radius">
+        <default>3</default>
+        <summary>Border radius</summary>
+        <description>Set window background border radius.</description>
+    </key>
+    <key type="(dddd)" name="background-color">
+        <default>(0.,0.,0.,0.25)</default>
+        <summary>Background color</summary>
+        <description>Set window background color.</description>
+    </key>
+    <key type="d" name="scale-width">
+        <default>0.1</default>
+        <summary>Scale width</summary>
+        <description>Rescale width/</description>
+    </key>
+    <key type="d" name="scale-height">
+        <default>0.1</default>
+        <summary>Scale height</summary>
+        <description>Rescale height/</description>
+    </key>
+  </schema>
+</schemalist>

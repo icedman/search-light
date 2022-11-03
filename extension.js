@@ -18,15 +18,23 @@
 
 /* exported init */
 
-const GETTEXT_DOMAIN = 'com.github.icedman.search-light';
+const GETTEXT_DOMAIN = 'search-light';
 
 const { GObject, St } = imports.gi;
 
 const ExtensionUtils = imports.misc.extensionUtils;
 const Main = imports.ui.main;
 const Me = ExtensionUtils.getCurrentExtension();
+const { schemaId, settingsKeys, SettingsKeys } = Me.imports.preferences.keys;
 
 const KeyboardShortcuts = Me.imports.keybinding.KeyboardShortcuts;
+
+const runSequence = Me.imports.utils.runSequence;
+const runOneShot = Me.imports.utils.runOneShot;
+const runLoop = Me.imports.utils.runLoop;
+const beginTimer = Me.imports.utils.beginTimer;
+const clearAllTimers = Me.imports.utils.clearAllTimers;
+const getRunningTimers = Me.imports.utils.getRunningTimers;
 
 const _ = ExtensionUtils.gettext;
 
@@ -35,9 +43,25 @@ class Extension {
     this._uuid = uuid;
 
     ExtensionUtils.initTranslations(GETTEXT_DOMAIN);
+
   }
 
   enable() {
+    Main._searchLight = this;
+
+    this._settings = ExtensionUtils.getSettings(schemaId);
+    this._settingsKeys = SettingsKeys;
+
+    SettingsKeys.connectSettings(this._settings, (name, value) => {
+      let n = name.replace(/-/g, '_');
+      this[n] = value;
+    });
+    Object.keys(SettingsKeys._keys).forEach((k) => {
+      let key = SettingsKeys.getKey(k);
+      let name = k.replace(/-/g, '_');
+      this[name] = key.value;
+    });
+
     this.container = new St.BoxLayout({
       name: 'searchLightContainer',
       vertical: true,
@@ -45,6 +69,9 @@ class Extension {
     this.container.add_style_class_name('dash');
     this.hide();
     this.container._delegate = this;
+    this.container.reactive = true;
+    this.container.can_focus = true;
+    this.container.track_hover = true;
 
     Main.uiGroup.add_child(this.container);
 
@@ -53,10 +80,6 @@ class Extension {
     this.accel = new KeyboardShortcuts();
     this.accel.enable();
 
-    // this.accel.listenFor(
-    //   '<ctrl><super>T',
-    //   this._toggle_search_light.bind(this)
-    // );
     this.accel.listenFor('<super>Space', this._toggle_search_light.bind(this));
     this.accel.listenFor(
       '<ctrl><super>Space',
@@ -77,6 +100,8 @@ class Extension {
   }
 
   disable() {
+    SettingsKeys.disconnectSettings();
+
     if (this.accel) {
       this.accel.disable();
       delete this.accel;
@@ -103,11 +128,14 @@ class Extension {
   _acquire_ui() {
     if (this._entry) return;
 
-    // todo!
+    if (!Main.overview._toggle) {
+      Main.overview._toggle = Main.overview.toggle;
+    }
+    Main.overview.toggle = () => {};
+
+    this.scaleFactor = St.ThemeContext.get_for_stage(global.stage).scale_factor;
+
     this._entry = Main.overview.searchEntry;
-    // Main.uiGroup.find_child_by_name(
-    //   'overview'
-    // ).first_child.first_child.first_child;
     this._entryParent = this._entry.get_parent();
 
     this._search = Main.uiGroup.find_child_by_name('searchController');
@@ -125,6 +153,7 @@ class Extension {
     this._textChangedEventId = this._search._text.connect(
       'text-changed',
       () => {
+        this.container.set_size(this.width, this.height);
         this._search.show();
       }
     );
@@ -153,6 +182,10 @@ class Extension {
     }
 
     this.container.hide();
+
+    if (Main.overview._toggle) {
+      Main.overview.toggle = Main.overview._toggle;
+    }
   }
 
   _queryDisplay() {
@@ -161,17 +194,27 @@ class Extension {
     this.sh = this.monitor.height;
   }
 
+  _compute_size() {
+    this._queryDisplay();
+    this.width = 600 + (this.sw/2) * (this.scale_width || 0);
+    this.height = 400 + (this.sh/2) * (this.scale_height || 0);
+    this.initial_height = 20 + (Main._searchLight._search._text.height * 2);
+    let x = this.sw / 2 - this.width / 2;
+    let y = this.sh / 2 - this.height / 2;
+    this._visible = true;
+    this.container.set_size(this.width, this.initial_height);
+    this.container.set_position(x, y);
+  }
+
   show() {
     this._acquire_ui();
-    this._queryDisplay();
-    let width = 800;
-    let height = 600;
-    let x = this.sw / 2 - width / 2;
-    let y = this.sh / 2 - height / 2;
-    this._visible = true;
-    this.container.set_size(width, height);
-    this.container.set_position(x, y);
+    this._update_css();
+    this._compute_size();
     this.container.show();
+
+    beginTimer(runOneShot(()=>{
+      this._compute_size();
+    }, 0));
 
     this._add_events();
   }
@@ -181,6 +224,26 @@ class Extension {
     this.container.hide();
     this._release_ui();
     this._remove_events();
+  }
+
+  _update_css(disable) {
+    let bg = this.background_color || [0, 0, 0, 0.5];
+    let clr = bg.map((r) => Math.floor(255 * r));
+    clr[3] = bg[3];
+    this.container.style = `background: rgba(${clr.join(',')})`;
+
+    if (this.border_radius !== null) {
+      let r = -1;
+      if (!disable) {
+        r = Math.floor(this.border_radius);
+        this.container.add_style_class_name(`border-radius-${r}`);
+      }
+      for (let i = 0; i < 7; i++) {
+        if (i != r) {
+          this.container.remove_style_class_name(`border-radius-${i}`);
+        }
+      }
+    }
   }
 
   _toggle_search_light() {

@@ -7,5 +7,7 @@
   ],
   "url": "https://github.com/icedman/search-light",
   "uuid": "search-light@icedman.github.com",
+  "schema-id": "org.gnome.shell.extensions.search-light",
+  "gettext-domain": "search-light",
   "version": 1
 }

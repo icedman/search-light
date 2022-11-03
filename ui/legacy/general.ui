@@ -1,0 +1,253 @@
+<?xml version="1.0" ?>
+<interface>
+  <object class="GtkBox" id="general">
+    <property name="visible">True</property>
+    <property name="can-focus">False</property>
+    <property name="margin-start">12</property>
+    <property name="margin-end">12</property>
+    <property name="margin-top">12</property>
+    <property name="margin-bottom">12</property>
+    <property name="orientation">vertical</property>
+    <child>
+      <object class="GtkListBox">
+        <child>
+          <object class="GtkListBoxRow">
+            <property name="visible">True</property>
+            <property name="can-focus">True</property>
+            <child>
+              <object class="GtkBox">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="margin-start">12</property>
+                <property name="margin-end">12</property>
+                <property name="margin-top">12</property>
+                <property name="margin-bottom">12</property>
+                <property name="orientation">vertical</property>
+                <child>
+                  <object class="GtkBox">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="spacing">32</property>
+                    <child>
+                      <object class="GtkLabel">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <property name="valign">center</property>
+                        <property name="label" translatable="yes">Background Color</property>
+                        <property name="xalign">0</property>
+                        <property name="hexpand">1</property>
+                        <attributes>
+                          <attribute name="weight" value="PANGO_WEIGHT_BOLD"/>
+                        </attributes>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkColorButton" id="background-color">
+                        <property name="valign">center</property>
+                        <property name="hexpand">false</property>
+                        <property name="width-request">70px</property>
+                        <property name="height-request">45px</property>
+                        <property name="show-editor">true</property>
+                        <property name="use-alpha">true</property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="halign">start</property>
+                    <property name="valign">center</property>
+                    <property name="label" translatable="yes">Set search window background color.</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkListBoxRow">
+            <property name="visible">True</property>
+            <property name="can-focus">True</property>
+            <child>
+              <object class="GtkBox">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="margin-start">12</property>
+                <property name="margin-end">12</property>
+                <property name="margin-top">12</property>
+                <property name="margin-bottom">12</property>
+                <property name="orientation">vertical</property>
+                <child>
+                  <object class="GtkBox">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="spacing">32</property>
+                    <child>
+                      <object class="GtkLabel">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <property name="valign">center</property>
+                        <property name="label" translatable="yes">Border Radius</property>
+                        <property name="xalign">0</property>
+                        <property name="hexpand">1</property>
+                        <attributes>
+                          <attribute name="weight" value="PANGO_WEIGHT_BOLD"/>
+                        </attributes>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkScale" id="border-radius">
+                        <property name="valign">center</property>
+                        <property name="hexpand">true</property>
+                        <property name="width-request">140px</property>
+                        <property name="draw-value">false</property>
+                        <property name="value-pos">right</property>
+                        <property name="orientation">horizontal</property>
+                        <property name="digits">0</property>
+                        <property name="adjustment">border-radius-adjust</property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="halign">start</property>
+                    <property name="valign">center</property>
+                    <property name="label" translatable="yes">Set window background border radius.</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkListBoxRow">
+            <property name="visible">True</property>
+            <property name="can-focus">True</property>
+            <child>
+              <object class="GtkBox">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="margin-start">12</property>
+                <property name="margin-end">12</property>
+                <property name="margin-top">12</property>
+                <property name="margin-bottom">12</property>
+                <property name="orientation">vertical</property>
+                <child>
+                  <object class="GtkBox">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="spacing">32</property>
+                    <child>
+                      <object class="GtkLabel">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <property name="valign">center</property>
+                        <property name="label" translatable="yes">Width</property>
+                        <property name="xalign">0</property>
+                        <property name="hexpand">1</property>
+                        <attributes>
+                          <attribute name="weight" value="PANGO_WEIGHT_BOLD"/>
+                        </attributes>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkScale" id="scale-width">
+                        <property name="valign">center</property>
+                        <property name="hexpand">true</property>
+                        <property name="width-request">140px</property>
+                        <property name="draw-value">true</property>
+                        <property name="value-pos">right</property>
+                        <property name="orientation">horizontal</property>
+                        <property name="digits">2</property>
+                        <property name="adjustment">scale-width-adjust</property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="halign">start</property>
+                    <property name="valign">center</property>
+                    <property name="label" translatable="yes">Set window width rescale.</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkListBoxRow">
+            <property name="visible">True</property>
+            <property name="can-focus">True</property>
+            <child>
+              <object class="GtkBox">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="margin-start">12</property>
+                <property name="margin-end">12</property>
+                <property name="margin-top">12</property>
+                <property name="margin-bottom">12</property>
+                <property name="orientation">vertical</property>
+                <child>
+                  <object class="GtkBox">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="spacing">32</property>
+                    <child>
+                      <object class="GtkLabel">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <property name="valign">center</property>
+                        <property name="label" translatable="yes">Height</property>
+                        <property name="xalign">0</property>
+                        <property name="hexpand">1</property>
+                        <attributes>
+                          <attribute name="weight" value="PANGO_WEIGHT_BOLD"/>
+                        </attributes>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkScale" id="scale-height">
+                        <property name="valign">center</property>
+                        <property name="hexpand">true</property>
+                        <property name="width-request">140px</property>
+                        <property name="draw-value">true</property>
+                        <property name="value-pos">right</property>
+                        <property name="orientation">horizontal</property>
+                        <property name="digits">2</property>
+                        <property name="adjustment">scale-height-adjust</property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="halign">start</property>
+                    <property name="valign">center</property>
+                    <property name="label" translatable="yes">Set window height rescale.</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
+  </object>
+  <object class="GtkAdjustment" id="border-radius-adjust">
+    <property name="lower">0</property>
+    <property name="upper">6</property>
+    <property name="step-increment">1</property>
+  </object>
+  <object class="GtkAdjustment" id="scale-width-adjust">
+    <property name="lower">0.0</property>
+    <property name="upper">1.0</property>
+    <property name="step-increment">0.01</property>
+  </object>
+  <object class="GtkAdjustment" id="scale-height-adjust">
+    <property name="lower">0.0</property>
+    <property name="upper">1.0</property>
+    <property name="step-increment">0.01</property>
+  </object>
+</interface>
