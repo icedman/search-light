@@ -9,6 +9,10 @@
   color: black;
 }
 
+#searchLightContainer > StScrollBar {
+  border: 2px solid magenta;
+}
+
 #searchLightContainer > StEntry:focus,
 #searchLightContainer > StEntry {
 	margin-top: 0px !important;

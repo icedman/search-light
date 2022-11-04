@@ -24,4 +24,17 @@ SettingsKeys.setKeys({
     default_value: [0, 0, 0, 0.5],
     widget_type: 'color',
   },
+  'preferred-monitor': {
+    default_value: 0,
+    widget_type: 'dropdown',
+    test: { values: [0, 1, 2] },
+  },
+  'msg-to-ext': {
+    default_value: '',
+    widget_type: 'string',
+  },
+  'shortcut-search': {
+    default_value: [],
+    widget_type: 'shortcut',
+  },
 });

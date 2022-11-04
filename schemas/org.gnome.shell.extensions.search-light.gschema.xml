@@ -21,5 +21,30 @@
         <summary>Scale height</summary>
         <description>Rescale height/</description>
     </key>
+    <key type="i" name="preferred-monitor">
+        <default>0</default>
+        <summary>Preferred monitor to dock</summary>
+        <description>Show dock on selected monitor.</description>
+    </key>
+    <key type="i" name="monitor-count">
+        <default>1</default>
+        <summary>Monitors Count</summary>
+        <description>Monitors found by the extension.</description>
+    </key>
+    <key type="as" name="shortcut-search">
+        <default><![CDATA[[]]]></default>
+        <summary>Shortcut</summary>
+        <description>Keyboard shortcut for search</description>
+    </key>
+    <key type="s" name="msg-to-pref">
+        <default>""</default>
+        <summary>MsgBus</summary>
+        <description>Preferences-Extension message bus</description>
+    </key>
+    <key type="s" name="msg-to-ext">
+        <default>""</default>
+        <summary>MsgBus</summary>
+        <description>Preferences-Extension message bus</description>
+    </key>
   </schema>
 </schemalist>

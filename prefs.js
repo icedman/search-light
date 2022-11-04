@@ -4,6 +4,7 @@ const { Adw, Gdk, GLib, Gtk, GObject, Gio, Pango } = imports.gi;
 const Me = imports.misc.extensionUtils.getCurrentExtension();
 const { SettingsKeys } = Me.imports.preferences.keys;
 const UIFolderPath = Me.dir.get_child('ui').get_path();
+const ShortcutSettingWidget = Me.imports.shortcuts.ShortcutSettingWidget;
 
 const GETTEXT_DOMAIN = 'search-light';
 const Gettext = imports.gettext.domain('search-light');
@@ -17,6 +18,13 @@ function init() {
   let iconTheme = Gtk.IconTheme.get_for_display(Gdk.Display.get_default());
   iconTheme.add_search_path(`${UIFolderPath}/icons`);
   ExtensionUtils.initTranslations(GETTEXT_DOMAIN);
+}
+
+function updateMonitors(window, builder, settings) {
+  // monitors
+  let count = settings.get_int('monitor-count') || 1;
+  const monitors_model = builder.get_object('preferred-monitor-model');
+  monitors_model.splice(count, 6 - count, []);
 }
 
 function addMenu(window, builder) {
@@ -61,27 +69,37 @@ function addMenu(window, builder) {
   window.remove(menu_util);
 }
 
-function buildPrefsWidget() {
-  let notebook = new Gtk.Notebook();
-
-  let builder = new Gtk.Builder();
-  builder.add_from_file(`${UIFolderPath}/legacy/general.ui`);
-  builder.add_from_file(`${UIFolderPath}/menu.ui`);
-  notebook.append_page(
-    builder.get_object('general'),
-    new Gtk.Label({ label: _('General') })
-  );
-
-  SettingsKeys.connectBuilder(builder);
-  SettingsKeys.connectSettings(ExtensionUtils.getSettings(schemaId));
-
-  notebook.connect('realize', () => {
-    let gtkVersion = Gtk.get_major_version();
-    let w = gtkVersion === 3 ? notebook.get_toplevel() : notebook.get_root();
-    addMenu(w, builder);
-  });
-  return notebook;
+function addButtonEvents(window, builder, settings) {
+  if (builder.get_object('grab-keys')) {
+    builder.get_object('grab-keys').connect('clicked', () => {
+      // settings.set_string('msg-to-ext', 'this.runDiagnostics()');
+    });
+  }
 }
+
+// function buildPrefsWidget() {
+//   let notebook = new Gtk.Notebook();
+
+//   let builder = new Gtk.Builder();
+//   builder.add_from_file(`${UIFolderPath}/legacy/general.ui`);
+//   builder.add_from_file(`${UIFolderPath}/menu.ui`);
+//   notebook.append_page(
+//     builder.get_object('general'),
+//     new Gtk.Label({ label: _('General') })
+//   );
+
+//   SettingsKeys.connectBuilder(builder);
+//   SettingsKeys.connectSettings(ExtensionUtils.getSettings(schemaId));
+
+//   notebook.connect('realize', () => {
+//     let gtkVersion = Gtk.get_major_version();
+//     let w = gtkVersion === 3 ? notebook.get_toplevel() : notebook.get_root();
+//     addButtonEvents(w, builder, settings);
+//     addMenu(w, builder);
+//     updateMonitors(w, builder, settings);
+//   });
+//   return notebook;
+// }
 
 function fillPreferencesWindow(window) {
   let builder = new Gtk.Builder();
@@ -91,8 +109,17 @@ function fillPreferencesWindow(window) {
   window.add(builder.get_object('general'));
   window.set_search_enabled(true);
 
+  let settings = ExtensionUtils.getSettings(schemaId);
+
   SettingsKeys.connectBuilder(builder);
   SettingsKeys.connectSettings(ExtensionUtils.getSettings(schemaId));
 
+  addButtonEvents(window, builder, settings);
+  updateMonitors(window, builder, settings);
   addMenu(window, builder);
+
+  // shortcuts widget
+
+  let placeholder = builder.get_object('shortcut-search-placeholder');
+  placeholder.append(new ShortcutSettingWidget(settings, 'shortcut-search'));
 }

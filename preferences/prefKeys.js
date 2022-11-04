@@ -55,6 +55,10 @@ var PrefKeys = class {
           settings.set_value(name, new GLib.Variant('(dddd)', value));
           break;
         }
+        case 'shortcut': {
+          settings.set_value(name, new GLib.Variant('as', value));
+          break;
+        }
       }
     }
 
@@ -135,6 +139,10 @@ var PrefKeys = class {
           }
           break;
         }
+        case 'shortcut': {
+          key.value = settings.get_value(name).deepUnpack();
+          break;
+        }
       }
 
       this._settingsListeners.push(
@@ -162,6 +170,10 @@ var PrefKeys = class {
             }
             case 'string': {
               key.value = settings.get_string(name);
+              break;
+            }
+            case 'shortcut': {
+              key.value = settings.get_value(name).deepUnpack();
               break;
             }
           }

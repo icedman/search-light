@@ -11,10 +11,20 @@
         <property name="description" translatable="yes"></property>
 
         <child>
-          <object class="AdwActionRow">
+          <object class="AdwActionRow" id="key-binding-text">
             <property name="title" translatable="yes">Search</property>
-            <property name="subtitle" translatable="yes">ctrl+super+Space
+            <property name="subtitle" translatable="yes">Set keyboard shortcut to popup Search box. Backspace to clear.
             </property>
+
+            <child>
+              <object class="GtkBox" id="shortcut-search-placeholder">
+                <property name="margin-start">6</property>
+                <property name="margin-end">6</property>
+                <property name="margin-top">6</property>
+                <property name="margin-bottom">6</property>
+              </object>
+            </child>
+
           </object>
         </child>
       </object>
@@ -24,6 +34,22 @@
       <object class="AdwPreferencesGroup">
         <property name="title" translatable="yes">Appearance</property>
         <property name="description" translatable="yes"></property>
+
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Preferred Monitor</property>
+            <property name="subtitle" translatable="yes"
+              >Show search box on selected monitor.</property
+            >
+            <property name="activatable-widget">preferred-monitor</property>
+            <child>
+              <object class="GtkDropDown" id="preferred-monitor">
+                <property name="valign">center</property>
+                <property name="model">preferred-monitor-model</property>
+              </object>
+            </child>
+          </object>
+        </child>
 
         <child>
           <object class="AdwActionRow">
@@ -133,5 +159,16 @@
     <property name="lower">0.0</property>
     <property name="upper">1.0</property>
     <property name="step-increment">0.01</property>
+  </object>
+
+  <object class="GtkStringList" id="preferred-monitor-model">
+    <items>
+      <item translatable="yes">Primary Monitor</item>
+      <item translatable="yes">Secondary Monitor</item>
+      <item translatable="yes">Monitor 3</item>
+      <item translatable="yes">Monitor 4</item>
+      <item translatable="yes">Monitor 5</item>
+      <item translatable="yes">Monitor 6</item>
+    </items>
   </object>
 </interface>

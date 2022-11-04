@@ -20,7 +20,7 @@
 
 const GETTEXT_DOMAIN = 'search-light';
 
-const { GObject, St } = imports.gi;
+const { GObject, St, Clutter } = imports.gi;
 
 const ExtensionUtils = imports.misc.extensionUtils;
 const Main = imports.ui.main;
@@ -54,11 +54,18 @@ class Extension {
     SettingsKeys.connectSettings(this._settings, (name, value) => {
       let n = name.replace(/-/g, '_');
       this[n] = value;
+      log(`${n} ${value}`);
+      switch (name) {
+        case 'shortcut-search':
+          this._updateShortcut();
+          break;
+      }
     });
     Object.keys(SettingsKeys._keys).forEach((k) => {
       let key = SettingsKeys.getKey(k);
       let name = k.replace(/-/g, '_');
       this[name] = key.value;
+      // log(`${name} ${key.value}`);
     });
 
     this.container = new St.BoxLayout({
@@ -78,11 +85,7 @@ class Extension {
     this.accel = new KeyboardShortcuts();
     this.accel.enable();
 
-    // this.accel.listenFor('<super>Space', this._toggle_search_light.bind(this));
-    this.accel.listenFor(
-      '<ctrl><super>Space',
-      this._toggle_search_light.bind(this)
-    );
+    this._updateShortcut();
 
     if (!this._inOverview) {
       this._overViewEvents = [];
@@ -93,6 +96,12 @@ class Extension {
         Main.overview.connect('hidden', this._onOverviewHidden.bind(this))
       );
     }
+
+    global.stage.connectObject(
+      'captured-event',
+      this._onCapturedEvent.bind(this),
+      this
+    );
 
     log('enabled');
   }
@@ -123,7 +132,53 @@ class Extension {
       this._overViewEvents = [];
     }
 
+    global.stage.disconnectObject(this);
+
     clearAllTimers();
+  }
+
+  _updateShortcut(disable) {
+    this.accel.unlisten();
+
+    let shortcut = (this.shortcut_search || []).join('');
+    if (shortcut == '') {
+      shortcut = '<Control><Super>Space';
+    }
+    if (!disable) {
+      this.accel.listenFor(shortcut, this._toggle_search_light.bind(this));
+    }
+  }
+
+  _onCapturedEvent(actor, event) {
+    if (event.type() == Clutter.EventType.KEY_PRESS) {
+      // log(`${event.type()}`);
+      let pressedKey = event.get_key_symbol();
+
+      log(`${pressedKey}`);
+    }
+    return Clutter.EVENT_PROPAGATE;
+  }
+
+  _queryDisplay() {
+    let idx = this.preferred_monitor || 0;
+    if (idx == 0) {
+      idx = Main.layoutManager.primaryIndex;
+    } else if (idx == Main.layoutManager.primaryIndex) {
+      idx = 0;
+    }
+    this.monitor =
+      Main.layoutManager.monitors[idx] || Main.layoutManager.primaryMonitor;
+
+    this.sw = this.monitor.width;
+    this.sh = this.monitor.height;
+
+    if (this._last_monitor_count != Main.layoutManager.monitors.length) {
+      this._settings.set_int(
+        'monitor-count',
+        Main.layoutManager.monitors.length
+      );
+      this._last_monitor_count = Main.layoutManager.monitors.length;
+    }
   }
 
   _acquire_ui() {
@@ -137,6 +192,8 @@ class Extension {
         this._search._text.get_parent().grab_key_focus();
       }
     };
+
+    this._queryDisplay();
 
     this.scaleFactor = St.ThemeContext.get_for_stage(global.stage).scale_factor;
 
@@ -198,12 +255,6 @@ class Extension {
     }
   }
 
-  _queryDisplay() {
-    this.monitor = Main.layoutManager.primaryMonitor;
-    this.sw = this.monitor.width;
-    this.sh = this.monitor.height;
-  }
-
   _compute_size() {
     this._queryDisplay();
     this.width = 600 + (this.sw / 2) * (this.scale_width || 0);
@@ -213,7 +264,7 @@ class Extension {
     let y = this.sh / 2 - this.height / 2;
     this._visible = true;
     this.container.set_size(this.width, this.initial_height);
-    this.container.set_position(x, y);
+    this.container.set_position(this.monitor.x + x, this.monitor.y + y);
   }
 
   show() {

@@ -21,13 +21,7 @@ var KeyboardShortcuts = class KeyboardShortcuts {
   }
 
   disable() {
-    if (this._grabbers) {
-      Object.keys(this._grabbers).forEach((k) => {
-        // what the post in stackoverflow doesn't show is proper clean.. ungrab!
-        global.display.ungrab_accelerator(k);
-      });
-    }
-    this._grabbers = {};
+    this.unlisten();
     global.display.disconnect(this._eventId);
   }
 
@@ -46,6 +40,19 @@ var KeyboardShortcuts = class KeyboardShortcuts {
       accelerator: accelerator,
       callback: callback,
     };
+
+    log(`Grabbed ${accelerator}`);
+  }
+
+  unlisten() {
+    if (this._grabbers) {
+      Object.keys(this._grabbers).forEach((k) => {
+        Main.wm.removeKeybinding(this._grabbers[k].name, Shell.ActionMode.ALL);
+        // what the post in stackoverflow doesn't show is proper clean.. ungrab!
+        global.display.ungrab_accelerator(k);
+      });
+    }
+    this._grabbers = {};
   }
 
   _onAccelerator(action) {
