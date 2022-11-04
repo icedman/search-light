@@ -257,9 +257,14 @@ class Extension {
 
   _compute_size() {
     this._queryDisplay();
-    this.width = 600 + (this.sw / 2) * (this.scale_width || 0);
-    this.height = 400 + (this.sh / 2) * (this.scale_height || 0);
-    this.initial_height = 20 + Main._searchLight._search._text.height * 2;
+    this.width =
+      600 + ((this.sw * this.scaleFactor) / 2) * (this.scale_width || 0);
+    this.height =
+      400 + ((this.sh * this.scaleFactor) / 2) * (this.scale_height || 0);
+    // this.initial_height = (24 + Main._searchLight._search._text.height * 2) * this.scaleFactor;
+    Main._searchLight._search._text.height = 44 * this.scaleFactor;
+    Main._searchLight._search._text.get_parent().height = 50 * this.scaleFactor;
+    this.initial_height = 44 * 2 * this.scaleFactor;
     let x = this.sw / 2 - this.width / 2;
     let y = this.sh / 2 - this.height / 2;
     this._visible = true;
