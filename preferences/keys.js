@@ -23,5 +23,5 @@ SettingsKeys.setKeys({
   'background-color': {
     default_value: [0, 0, 0, 0.5],
     widget_type: 'color',
-  }
+  },
 });

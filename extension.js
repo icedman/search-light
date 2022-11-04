@@ -43,7 +43,6 @@ class Extension {
     this._uuid = uuid;
 
     ExtensionUtils.initTranslations(GETTEXT_DOMAIN);
-
   }
 
   enable() {
@@ -80,7 +79,7 @@ class Extension {
     this.accel = new KeyboardShortcuts();
     this.accel.enable();
 
-    this.accel.listenFor('<super>Space', this._toggle_search_light.bind(this));
+    // this.accel.listenFor('<super>Space', this._toggle_search_light.bind(this));
     this.accel.listenFor(
       '<ctrl><super>Space',
       this._toggle_search_light.bind(this)
@@ -101,6 +100,7 @@ class Extension {
 
   disable() {
     SettingsKeys.disconnectSettings();
+    this._settings = null;
 
     if (this.accel) {
       this.accel.disable();
@@ -123,6 +123,8 @@ class Extension {
       });
       this._overViewEvents = [];
     }
+
+    clearAllTimers();
   }
 
   _acquire_ui() {
@@ -131,7 +133,11 @@ class Extension {
     if (!Main.overview._toggle) {
       Main.overview._toggle = Main.overview.toggle;
     }
-    Main.overview.toggle = () => {};
+    Main.overview.toggle = () => {
+      if (this._search && this._search.visible) {
+        this._search._text.get_parent().grab_key_focus();
+      }
+    };
 
     this.scaleFactor = St.ThemeContext.get_for_stage(global.stage).scale_factor;
 
@@ -185,6 +191,7 @@ class Extension {
 
     if (Main.overview._toggle) {
       Main.overview.toggle = Main.overview._toggle;
+      Main.overview._toggle = null;
     }
   }
 
@@ -196,9 +203,9 @@ class Extension {
 
   _compute_size() {
     this._queryDisplay();
-    this.width = 600 + (this.sw/2) * (this.scale_width || 0);
-    this.height = 400 + (this.sh/2) * (this.scale_height || 0);
-    this.initial_height = 20 + (Main._searchLight._search._text.height * 2);
+    this.width = 600 + (this.sw / 2) * (this.scale_width || 0);
+    this.height = 400 + (this.sh / 2) * (this.scale_height || 0);
+    this.initial_height = 20 + Main._searchLight._search._text.height * 2;
     let x = this.sw / 2 - this.width / 2;
     let y = this.sh / 2 - this.height / 2;
     this._visible = true;
@@ -212,9 +219,11 @@ class Extension {
     this._compute_size();
     this.container.show();
 
-    beginTimer(runOneShot(()=>{
-      this._compute_size();
-    }, 0));
+    beginTimer(
+      runOneShot(() => {
+        this._compute_size();
+      }, 0)
+    );
 
     this._add_events();
   }
@@ -296,11 +305,9 @@ class Extension {
 
   _onOverviewShowing() {
     this._inOverview = true;
-    this._release_ui();
   }
 
   _onOverviewHidden() {
-    this._acquire_ui();
     this._inOverview = false;
   }
 

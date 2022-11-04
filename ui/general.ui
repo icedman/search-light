@@ -119,7 +119,7 @@
 
   <object class="GtkAdjustment" id="border-radius-adjust">
     <property name="lower">0</property>
-    <property name="upper">6</property>
+    <property name="upper">7</property>
     <property name="step-increment">1</property>
   </object>
 

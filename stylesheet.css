@@ -45,3 +45,7 @@
 #searchLightContainer.border-radius-6 > StWidget.dash-background {
   border-radius: 32px !important;
 }
+
+#searchLightContainer.border-radius-7 > StWidget.dash-background {
+  border-radius: 48px !important;
+}
