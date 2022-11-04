@@ -147,9 +147,13 @@ class Extension {
     this._searchResults = this._search._searchResults;
     this._searchParent = this._search.get_parent();
 
-    this._entry.get_parent().remove_child(this._entry);
+    if (this._entry.get_parent()) {
+      this._entry.get_parent().remove_child(this._entry);
+    }
     this.container.add_child(this._entry);
-    this._search.get_parent().remove_child(this._search);
+    if (this._search.get_parent()) {
+      this._search.get_parent().remove_child(this._search);
+    }
     this.container.add_child(this._search);
     if (!this._search.__searchCancelled) {
       this._search.__searchCancelled = this._search._searchCancelled;
