@@ -65,7 +65,6 @@ class Extension {
       name: 'searchLightContainer',
       vertical: true,
     });
-    this.container.add_style_class_name('dash');
     this.hide();
     this.container._delegate = this;
     this.container.reactive = true;
@@ -247,11 +246,17 @@ class Extension {
         r = Math.floor(this.border_radius);
         this.container.add_style_class_name(`border-radius-${r}`);
       }
-      for (let i = 0; i < 7; i++) {
+      for (let i = 0; i < 8; i++) {
         if (i != r) {
           this.container.remove_style_class_name(`border-radius-${i}`);
         }
       }
+    }
+
+    if (0.3 * bg[0] + 0.59 * bg[1] + 0.11 * bg[2] < 0.5) {
+      this.container.remove_style_class_name('light');
+    } else {
+      this.container.add_style_class_name('light');
     }
   }
 
