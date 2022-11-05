@@ -97,12 +97,6 @@ class Extension {
       );
     }
 
-    global.stage.connectObject(
-      'captured-event',
-      this._onCapturedEvent.bind(this),
-      this
-    );
-
     log('enabled');
   }
 
@@ -147,16 +141,6 @@ class Extension {
     if (!disable) {
       this.accel.listenFor(shortcut, this._toggle_search_light.bind(this));
     }
-  }
-
-  _onCapturedEvent(actor, event) {
-    if (event.type() == Clutter.EventType.KEY_PRESS) {
-      // log(`${event.type()}`);
-      let pressedKey = event.get_key_symbol();
-
-      log(`${pressedKey}`);
-    }
-    return Clutter.EVENT_PROPAGATE;
   }
 
   _queryDisplay() {
