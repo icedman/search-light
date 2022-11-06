@@ -13,10 +13,6 @@
   color: black;
 }
 
-#searchLightContainer > StScrollBar {
-  border: 2px solid magenta;
-}
-
 #searchLightContainer > StEntry.slc:focus,
 #searchLightContainer > StEntry.slc {
 	margin-top: 0px !important;
@@ -28,9 +24,18 @@
   font-size: 20pt !important;
 }
 
-#searchResultsContent .search-section {
-  /*border:  2px solid red;*/
-  background: rgba(0,0,0,0);
+#searchLightContainer .app-well-app {
+  /*border: 2px solid red;*/
+}
+
+#searchLightContainer.light StBoxLayout.search-section-content *:focus,
+#searchLightContainer.light StBoxLayout.search-section-content {
+  background: rgba(50,50,50,0.10) !important;
+}
+
+#searchLightContainer StBoxLayout.search-section-content *:focus,
+#searchLightContainer StBoxLayout.search-section-content {
+  background: rgba(100,100,100,0.20) !important;
 }
 
 #searchLightContainer.border-radius-0 {

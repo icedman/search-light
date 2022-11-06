@@ -70,13 +70,12 @@ class Extension {
     this.container = new St.BoxLayout({
       name: 'searchLightContainer',
       vertical: true,
+      reactive: true,
+      track_hover: true,
+      can_focus: true,
     });
     this.hide();
     this.container._delegate = this;
-    this.container.reactive = true;
-    this.container.can_focus = true;
-    this.container.track_hover = true;
-
     Main.uiGroup.add_child(this.container);
 
     // this._acquire_ui();
@@ -85,16 +84,6 @@ class Extension {
     this.accel.enable();
 
     this._updateShortcut();
-
-    if (!this._inOverview) {
-      this._overViewEvents = [];
-      this._overViewEvents.push(
-        Main.overview.connect('showing', this._onOverviewShowing.bind(this))
-      );
-      this._overViewEvents.push(
-        Main.overview.connect('hidden', this._onOverviewHidden.bind(this))
-      );
-    }
 
     log('enabled');
   }
@@ -117,15 +106,6 @@ class Extension {
       this.container.destroy();
       this.container = null;
     }
-
-    if (this._overViewEvents && !this._inOverview) {
-      this._overViewEvents.forEach((id) => {
-        Main.overview.disconnect(id);
-      });
-      this._overViewEvents = [];
-    }
-
-    global.stage.disconnectObject(this);
 
     clearAllTimers();
   }
@@ -265,7 +245,7 @@ class Extension {
     if (this._entry) {
       this._entry.get_children().forEach((c) => {
         if (c.style_class == 'search-entry-icon') {
-          c.set_icon_size(30, 30);
+          c.set_icon_size(28);
         } else {
           c.style = 'font-size: 18pt';
         }
@@ -347,43 +327,26 @@ class Extension {
   }
 
   _add_events() {
-    this._stageEvents = [];
-    this._stageEvents.push(
-      global.stage.connect(
-        'notify::key-focus',
-        this._onKeyFocusChanged.bind(this)
-      )
+    global.stage.connectObject(
+      'notify::key-focus',
+      this._onKeyFocusChanged.bind(this),
+      'key-press-event',
+      this._onKeyPressed.bind(this),
+      this
     );
 
-    this._displayEvents = [];
-    this._displayEvents.push(
-      global.display.connect(
-        'notify::focus-window',
-        this._onFocusWindow.bind(this)
-      )
-    );
-    this._displayEvents.push(
-      global.display.connect(
-        'in-fullscreen-changed',
-        this._onFullScreen.bind(this)
-      )
+    global.display.connectObject(
+      'notify::focus-window',
+      this._onFocusWindow.bind(this),
+      'in-fullscreen-changed',
+      this._onFullScreen.bind(this),
+      this
     );
   }
 
   _remove_events() {
-    if (this._displayEvents) {
-      this._displayEvents.forEach((id) => {
-        global.display.disconnect(id);
-      });
-    }
-    this._displayEvents = [];
-
-    if (this._stageEvents) {
-      this._stageEvents.forEach((id) => {
-        global.stage.disconnect(id);
-      });
-    }
-    this._stageEvents = [];
+    global.display.disconnectObject(this);
+    global.stage.disconnectObject(this);
   }
 
   _onOverviewShowing() {
@@ -404,6 +367,14 @@ class Extension {
     if (!appearFocused) {
       this.hide();
     }
+  }
+
+  _onKeyPressed(obj, evt) {
+    let focus = global.stage.get_key_focus();
+    if (!this._entry.contains(focus)) {
+      this._search._text.get_parent().grab_key_focus();
+    }
+    return Clutter.EVENT_STOP;
   }
 
   _onFullScreen() {
