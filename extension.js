@@ -82,7 +82,16 @@ class Extension {
     });
     this.hide();
     this.container._delegate = this;
-    Main.uiGroup.add_child(this.mainContainer);
+
+    if (Main.panel) {
+      // just above chrome
+      Main.uiGroup.insert_child_above(
+        this.mainContainer,
+        Main.panel.get_parent()
+      );
+    } else {
+      Main.uiGroup.add_child(this.mainContainer);
+    }
 
     this.mainContainer.add_child(this.container);
 
@@ -103,12 +112,12 @@ class Extension {
         mode: Shell.BlurMode.ACTOR,
       }),
     });
-    
+
     background_parent.add_child(this._bgActor);
     this._bgActor.clip_to_allocation = true;
     this._bgActor.offscreen_redirect = Clutter.OffscreenRedirect.ALWAYS;
-      background_parent.opacity = 255;
-      
+    background_parent.opacity = 255;
+
     this.mainContainer.insert_child_below(background_parent, this.container);
     this._background = background_parent;
     this._background.visible = false;

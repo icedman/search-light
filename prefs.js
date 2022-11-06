@@ -70,36 +70,8 @@ function addMenu(window, builder) {
 }
 
 function addButtonEvents(window, builder, settings) {
-  if (builder.get_object('grab-keys')) {
-    builder.get_object('grab-keys').connect('clicked', () => {
-      // settings.set_string('msg-to-ext', 'this.runDiagnostics()');
-    });
-  }
+  //
 }
-
-// function buildPrefsWidget() {
-//   let notebook = new Gtk.Notebook();
-
-//   let builder = new Gtk.Builder();
-//   builder.add_from_file(`${UIFolderPath}/legacy/general.ui`);
-//   builder.add_from_file(`${UIFolderPath}/menu.ui`);
-//   notebook.append_page(
-//     builder.get_object('general'),
-//     new Gtk.Label({ label: _('General') })
-//   );
-
-//   SettingsKeys.connectBuilder(builder);
-//   SettingsKeys.connectSettings(ExtensionUtils.getSettings(schemaId));
-
-//   notebook.connect('realize', () => {
-//     let gtkVersion = Gtk.get_major_version();
-//     let w = gtkVersion === 3 ? notebook.get_toplevel() : notebook.get_root();
-//     addButtonEvents(w, builder, settings);
-//     addMenu(w, builder);
-//     updateMonitors(w, builder, settings);
-//   });
-//   return notebook;
-// }
 
 function fillPreferencesWindow(window) {
   let builder = new Gtk.Builder();
