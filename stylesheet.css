@@ -5,6 +5,10 @@
   box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
 }
 
+#searchLightContainer * {
+  font-size: 14pt !important;
+}
+
 #searchLightContainer.light * {
   color: black;
 }
@@ -13,15 +17,20 @@
   border: 2px solid magenta;
 }
 
-#searchLightContainer > StEntry:focus,
-#searchLightContainer > StEntry {
+#searchLightContainer > StEntry.slc:focus,
+#searchLightContainer > StEntry.slc {
 	margin-top: 0px !important;
   margin-bottom: 20px !important;
 	border-radius: 8px;
   border: 0px !important;
   border-width: 0px !important;
   background: rgba(0,0,0,0);
-  font-size: 18pt !important;
+  font-size: 20pt !important;
+}
+
+#searchResultsContent .search-section {
+  /*border:  2px solid red;*/
+  background: rgba(0,0,0,0);
 }
 
 #searchLightContainer.border-radius-0 {

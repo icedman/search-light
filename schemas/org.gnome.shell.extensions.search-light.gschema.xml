@@ -36,6 +36,11 @@
         <summary>Shortcut</summary>
         <description>Keyboard shortcut for search</description>
     </key>
+    <key type="b" name="popup-at-cursor-monitor">
+        <default>false</default>
+        <summary>Popup at Cursor</summary>
+        <description></description>
+    </key>
     <key type="s" name="msg-to-pref">
         <default>""</default>
         <summary>MsgBus</summary>

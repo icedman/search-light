@@ -37,4 +37,8 @@ SettingsKeys.setKeys({
     default_value: [],
     widget_type: 'shortcut',
   },
+  'popup-at-cursor-monitor': {
+    default_value: false,
+    widget_type: 'switch',
+  },
 });

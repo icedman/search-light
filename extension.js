@@ -142,7 +142,7 @@ class Extension {
     if (shortcut == '') {
       shortcut = '<Control><Super>Space';
     }
-    
+
     if (!disable) {
       this.accel.listenFor(shortcut, this._toggle_search_light.bind(this));
     }
@@ -157,6 +157,20 @@ class Extension {
     }
     this.monitor =
       Main.layoutManager.monitors[idx] || Main.layoutManager.primaryMonitor;
+
+    if (this.popup_at_cursor_monitor) {
+      let pointer = global.get_pointer();
+      Main.layoutManager.monitors.forEach((m) => {
+        if (
+          pointer[0] >= m.x &&
+          pointer[0] <= m.x + m.width &&
+          pointer[1] >= m.y &&
+          pointer[1] <= m.y + m.height
+        ) {
+          this.monitor = m;
+        }
+      });
+    }
 
     this.sw = this.monitor.width;
     this.sh = this.monitor.height;
@@ -188,10 +202,12 @@ class Extension {
 
     this._entry = Main.overview.searchEntry;
     this._entryParent = this._entry.get_parent();
+    this._entry.add_style_class_name('slc');
 
     this._search = Main.uiGroup.find_child_by_name('searchController');
     this._searchResults = this._search._searchResults;
     this._searchParent = this._search.get_parent();
+    this._resize_icons();
 
     if (this._entry.get_parent()) {
       this._entry.get_parent().remove_child(this._entry);
@@ -209,6 +225,7 @@ class Extension {
       'text-changed',
       () => {
         this.container.set_size(this.width, this.height);
+        this._resize_icons();
         this._search.show();
       }
     );
@@ -241,6 +258,18 @@ class Extension {
     if (Main.overview._toggle) {
       Main.overview.toggle = Main.overview._toggle;
       Main.overview._toggle = null;
+    }
+  }
+
+  _resize_icons() {
+    if (this._entry) {
+      this._entry.get_children().forEach((c) => {
+        if (c.style_class == 'search-entry-icon') {
+          c.set_icon_size(30, 30);
+        } else {
+          c.style = 'font-size: 18pt';
+        }
+      });
     }
   }
 

@@ -32,7 +32,7 @@
 
     <child>
       <object class="AdwPreferencesGroup">
-        <property name="title" translatable="yes">Appearance</property>
+        <property name="title" translatable="yes">Multi-Monitor</property>
         <property name="description" translatable="yes"></property>
 
         <child>
@@ -50,6 +50,28 @@
             </child>
           </object>
         </child>
+
+        <child>
+          <object class="AdwActionRow" id="popup-at-cursor-monitor-row">
+            <property name="title" translatable="yes">Popup at Cursor Monitor</property>
+            <property name="subtitle" translatable="yes"
+              >Show search box at the monitor where cursor is located.</property
+            >
+            <property name="activatable-widget">popup-at-cursor-monitor</property>
+            <child>
+              <object class="GtkSwitch" id="popup-at-cursor-monitor">
+                <property name="valign">center</property>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
+
+    <child>
+      <object class="AdwPreferencesGroup">
+        <property name="title" translatable="yes">Appearance</property>
+        <property name="description" translatable="yes"></property>
 
         <child>
           <object class="AdwActionRow">
