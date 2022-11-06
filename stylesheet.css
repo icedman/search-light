@@ -38,34 +38,42 @@
   background: rgba(100,100,100,0.20) !important;
 }
 
+#searchLightContainer.border-radius-0 StBoxLayout.search-section-content,
 #searchLightContainer.border-radius-0 {
   border-radius: 0px !important;
 }
 
+#searchLightContainer.border-radius-1 StBoxLayout.search-section-content,
 #searchLightContainer.border-radius-1 {
   border-radius: 8px !important;
 }
 
+#searchLightContainer.border-radius-2 StBoxLayout.search-section-content,
 #searchLightContainer.border-radius-2 {
   border-radius: 16px !important;
 }
 
+#searchLightContainer.border-radius-3 StBoxLayout.search-section-content,
 #searchLightContainer.border-radius-3 {
   border-radius: 20px !important;
 }
 
+#searchLightContainer.border-radius-4 StBoxLayout.search-section-content,
 #searchLightContainer.border-radius-4 {
   border-radius: 24px !important;
 }
 
+#searchLightContainer.border-radius-5 StBoxLayout.search-section-content,
 #searchLightContainer.border-radius-5 {
   border-radius: 28px !important;
 }
 
+#searchLightContainer.border-radius-6 StBoxLayout.search-section-content,
 #searchLightContainer.border-radius-6 {
   border-radius: 32px !important;
 }
 
+#searchLightContainer.border-radius-7 StBoxLayout.search-section-content,
 #searchLightContainer.border-radius-7 {
   border-radius: 48px !important;
 }

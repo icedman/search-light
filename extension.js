@@ -243,6 +243,8 @@ class Extension {
 
   _resize_icons() {
     if (this._entry) {
+      this._entry.height = 60 * this.scaleFactor;
+
       this._entry.get_children().forEach((c) => {
         if (c.style_class == 'search-entry-icon') {
           c.set_icon_size(28);
