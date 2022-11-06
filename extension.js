@@ -14,13 +14,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
- */
+ *
+/
 
 /* exported init */
 
 const GETTEXT_DOMAIN = 'search-light';
 
-const { GObject, St, Clutter } = imports.gi;
+const { GObject, St, Clutter, Shell, Meta } = imports.gi;
 
 const ExtensionUtils = imports.misc.extensionUtils;
 const Main = imports.ui.main;
@@ -67,8 +68,13 @@ class Extension {
       // log(`${name} ${key.value}`);
     });
 
+    this.mainContainer = new St.Widget({
+      name: 'searchLight',
+      offscreen_redirect: Clutter.OffscreenRedirect.ALWAYS,
+      layout_manager: new Clutter.BinLayout(),
+    });
     this.container = new St.BoxLayout({
-      name: 'searchLightContainer',
+      name: 'searchLightBox',
       vertical: true,
       reactive: true,
       track_hover: true,
@@ -76,14 +82,49 @@ class Extension {
     });
     this.hide();
     this.container._delegate = this;
-    Main.uiGroup.add_child(this.container);
+    Main.uiGroup.add_child(this.mainContainer);
 
-    // this._acquire_ui();
+    this.mainContainer.add_child(this.container);
+
+    this._bgActor = new Meta.BackgroundActor();
+    let background = Main.layoutManager._backgroundGroup.get_child_at_index(0);
+    this._bgActor.set_content(background.get_content());
+    let background_parent = new St.Widget({
+      name: 'searchLightBlurredBackground',
+      layout_manager: new Clutter.BinLayout(),
+      x: 0,
+      y: 0,
+      width: 400,
+      height: 400,
+      effect: new Shell.BlurEffect({
+        name: 'blur',
+        brightness: 1.0,
+        sigma: 100,
+        mode: Shell.BlurMode.ACTOR,
+      }),
+    });
+    
+    background_parent.add_child(this._bgActor);
+    this._bgActor.clip_to_allocation = true;
+    this._bgActor.offscreen_redirect = Clutter.OffscreenRedirect.ALWAYS;
+      background_parent.opacity = 255;
+      
+    this.mainContainer.insert_child_below(background_parent, this.container);
+    this._background = background_parent;
+    this._background.visible = false;
 
     this.accel = new KeyboardShortcuts();
     this.accel.enable();
 
     this._updateShortcut();
+
+    Main.overview.connectObject(
+      'overview-showing',
+      this._onOverviewShowing.bind(this),
+      'overview-hidden',
+      this._onOverviewHidden.bind(this),
+      this
+    );
 
     log('enabled');
   }
@@ -205,6 +246,7 @@ class Extension {
       'text-changed',
       () => {
         this.container.set_size(this.width, this.height);
+        this.mainContainer.set_size(this.width, this.height);
         this._resize_icons();
         this._search.show();
       }
@@ -233,7 +275,7 @@ class Extension {
       this._search = null;
     }
 
-    this.container.hide();
+    this.mainContainer.hide();
 
     if (Main.overview._toggle) {
       Main.overview.toggle = Main.overview._toggle;
@@ -255,26 +297,46 @@ class Extension {
 
   _compute_size() {
     this._queryDisplay();
+
+    // container size
     this.width =
       600 + ((this.sw * this.scaleFactor) / 2) * (this.scale_width || 0);
     this.height =
       400 + ((this.sh * this.scaleFactor) / 2) * (this.scale_height || 0);
-    // this.initial_height = (24 + Main._searchLight._search._text.height * 2) * this.scaleFactor;
+
+    // text size
     Main._searchLight._search._text.height = 44 * this.scaleFactor;
     Main._searchLight._search._text.get_parent().height = 50 * this.scaleFactor;
+
+    // initial height
     this.initial_height = 44 * 2 * this.scaleFactor;
+
+    // position
     let x = this.sw / 2 - this.width / 2;
     let y = this.sh / 2 - this.height / 2;
     this._visible = true;
+
+    // this.container.set_size(this.width, this.initial_height);
+    // this.container.set_position(this.monitor.x + x, this.monitor.y + y);
+
     this.container.set_size(this.width, this.initial_height);
-    this.container.set_position(this.monitor.x + x, this.monitor.y + y);
+    this.mainContainer.set_size(this.width, this.initial_height);
+    this.mainContainer.set_position(this.monitor.x + x, this.monitor.y + y);
+
+    // background
+    if (this._background) {
+      // this._background.set_position(this.monitor.x - x, this.monitor.y - y);
+      this._background.set_position(0, 0);
+      this._background.set_size(this.monitor.width, this.monitor.height);
+      this._background.show();
+    }
   }
 
   show() {
     this._acquire_ui();
     this._update_css();
     this._compute_size();
-    this.container.show();
+    this.mainContainer.show();
 
     beginTimer(
       runOneShot(() => {
@@ -287,7 +349,7 @@ class Extension {
 
   hide() {
     this._visible = false;
-    this.container.hide();
+    this.mainContainer.hide();
     this._release_ui();
     this._remove_events();
   }
@@ -302,11 +364,11 @@ class Extension {
       let r = -1;
       if (!disable) {
         r = Math.floor(this.border_radius);
-        this.container.add_style_class_name(`border-radius-${r}`);
+        this.mainContainer.add_style_class_name(`border-radius-${r}`);
       }
       for (let i = 0; i < 8; i++) {
         if (i != r) {
-          this.container.remove_style_class_name(`border-radius-${i}`);
+          this.mainContainer.remove_style_class_name(`border-radius-${i}`);
         }
       }
     }
@@ -347,6 +409,7 @@ class Extension {
   _remove_events() {
     global.display.disconnectObject(this);
     global.stage.disconnectObject(this);
+    Main.overview.disconnectObject(this);
   }
 
   _onOverviewShowing() {

@@ -1,20 +1,30 @@
-#searchLightContainer {
+#searchLight {
+  /*border: 8px solid red;*/
+}
+
+#searchLightBlurredBackground {
+  /*background-color: transparent !important;*/
+  /*background-color: rgba(255, 255, 255, 0.5) !important;*/
+  border: 20px !important;
+}
+
+#searchLightBox {
   padding: 14px;
   border-radius: 16px;
   border: 0px;
   box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
 }
 
-#searchLightContainer * {
+#searchLightBox * {
   font-size: 14pt !important;
 }
 
-#searchLightContainer.light * {
+#searchLightBox.light * {
   color: black;
 }
 
-#searchLightContainer > StEntry.slc:focus,
-#searchLightContainer > StEntry.slc {
+#searchLightBox > StEntry.slc:focus,
+#searchLightBox > StEntry.slc {
 	margin-top: 0px !important;
   margin-bottom: 20px !important;
 	border-radius: 8px;
@@ -24,56 +34,64 @@
   font-size: 20pt !important;
 }
 
-#searchLightContainer .app-well-app {
+#searchLightBox .app-well-app {
   /*border: 2px solid red;*/
 }
 
-#searchLightContainer.light StBoxLayout.search-section-content *:focus,
-#searchLightContainer.light StBoxLayout.search-section-content {
+#searchLightBox.light StBoxLayout.search-section-content *:focus,
+#searchLightBox.light StBoxLayout.search-section-content {
   background: rgba(50,50,50,0.10) !important;
 }
 
-#searchLightContainer StBoxLayout.search-section-content *:focus,
-#searchLightContainer StBoxLayout.search-section-content {
+#searchLightBox StBoxLayout.search-section-content *:focus,
+#searchLightBox StBoxLayout.search-section-content {
   background: rgba(100,100,100,0.20) !important;
 }
 
-#searchLightContainer.border-radius-0 StBoxLayout.search-section-content,
-#searchLightContainer.border-radius-0 {
+#searchLight.border-radius-0 #searchLightBlurredBackground,
+#searchLight.border-radius-0 StBoxLayout.search-section-content,
+#searchLight.border-radius-0 {
   border-radius: 0px !important;
 }
 
-#searchLightContainer.border-radius-1 StBoxLayout.search-section-content,
-#searchLightContainer.border-radius-1 {
+#searchLight.border-radius-1 #searchLightBlurredBackground,
+#searchLight.border-radius-1 StBoxLayout.search-section-content,
+#searchLight.border-radius-1 {
   border-radius: 8px !important;
 }
 
-#searchLightContainer.border-radius-2 StBoxLayout.search-section-content,
-#searchLightContainer.border-radius-2 {
+#searchLight.border-radius-2 #searchLightBlurredBackground,
+#searchLight.border-radius-2 StBoxLayout.search-section-content,
+#searchLight.border-radius-2 {
   border-radius: 16px !important;
 }
 
-#searchLightContainer.border-radius-3 StBoxLayout.search-section-content,
-#searchLightContainer.border-radius-3 {
+#searchLight.border-radius-3 #searchLightBlurredBackground,
+#searchLight.border-radius-3 StBoxLayout.search-section-content,
+#searchLight.border-radius-3 {
   border-radius: 20px !important;
 }
 
-#searchLightContainer.border-radius-4 StBoxLayout.search-section-content,
-#searchLightContainer.border-radius-4 {
+#searchLight.border-radius-4 #searchLightBlurredBackground,
+#searchLight.border-radius-4 StBoxLayout.search-section-content,
+#searchLight.border-radius-4 {
   border-radius: 24px !important;
 }
 
-#searchLightContainer.border-radius-5 StBoxLayout.search-section-content,
-#searchLightContainer.border-radius-5 {
+#searchLight.border-radius-5 #searchLightBlurredBackground,
+#searchLight.border-radius-5 StBoxLayout.search-section-content,
+#searchLight.border-radius-5 {
   border-radius: 28px !important;
 }
 
-#searchLightContainer.border-radius-6 StBoxLayout.search-section-content,
-#searchLightContainer.border-radius-6 {
+#searchLight.border-radius-6 #searchLightBlurredBackground,
+#searchLight.border-radius-6 StBoxLayout.search-section-content,
+#searchLight.border-radius-6 {
   border-radius: 32px !important;
 }
 
-#searchLightContainer.border-radius-7 StBoxLayout.search-section-content,
-#searchLightContainer.border-radius-7 {
+#searchLight.border-radius-7 #searchLightBlurredBackground,
+#searchLight.border-radius-7 StBoxLayout.search-section-content,
+#searchLight.border-radius-7 {
   border-radius: 48px !important;
 }
