@@ -95,32 +95,32 @@ class Extension {
 
     this.mainContainer.add_child(this.container);
 
-    this._bgActor = new Meta.BackgroundActor();
-    let background = Main.layoutManager._backgroundGroup.get_child_at_index(0);
-    this._bgActor.set_content(background.get_content());
-    let background_parent = new St.Widget({
-      name: 'searchLightBlurredBackground',
-      layout_manager: new Clutter.BinLayout(),
-      x: 0,
-      y: 0,
-      width: 400,
-      height: 400,
-      effect: new Shell.BlurEffect({
-        name: 'blur',
-        brightness: 1.0,
-        sigma: 100,
-        mode: Shell.BlurMode.ACTOR,
-      }),
-    });
+    // this._bgActor = new Meta.BackgroundActor();
+    // let background = Main.layoutManager._backgroundGroup.get_child_at_index(0);
+    // this._bgActor.set_content(background.get_content());
+    // let background_parent = new St.Widget({
+    //   name: 'searchLightBlurredBackground',
+    //   layout_manager: new Clutter.BinLayout(),
+    //   x: 0,
+    //   y: 0,
+    //   width: 400,
+    //   height: 400,
+    //   effect: new Shell.BlurEffect({
+    //     name: 'blur',
+    //     brightness: 1.0,
+    //     sigma: 100,
+    //     mode: Shell.BlurMode.ACTOR,
+    //   }),
+    // });
 
-    background_parent.add_child(this._bgActor);
-    this._bgActor.clip_to_allocation = true;
-    this._bgActor.offscreen_redirect = Clutter.OffscreenRedirect.ALWAYS;
-    background_parent.opacity = 255;
+    // background_parent.add_child(this._bgActor);
+    // this._bgActor.clip_to_allocation = true;
+    // this._bgActor.offscreen_redirect = Clutter.OffscreenRedirect.ALWAYS;
+    // background_parent.opacity = 255;
 
-    this.mainContainer.insert_child_below(background_parent, this.container);
-    this._background = background_parent;
-    this._background.visible = false;
+    // this.mainContainer.insert_child_below(background_parent, this.container);
+    // this._background = background_parent;
+    // this._background.visible = false;
 
     this.accel = new KeyboardShortcuts();
     this.accel.enable();
