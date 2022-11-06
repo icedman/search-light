@@ -54,7 +54,6 @@ class Extension {
     SettingsKeys.connectSettings(this._settings, (name, value) => {
       let n = name.replace(/-/g, '_');
       this[n] = value;
-      log(`${n} ${value}`);
       switch (name) {
         case 'shortcut-search':
           this._updateShortcut();
@@ -134,10 +133,16 @@ class Extension {
   _updateShortcut(disable) {
     this.accel.unlisten();
 
-    let shortcut = (this.shortcut_search || []).join('');
+    let shortcut = '';
+    try {
+      shortcut = (this.shortcut_search || []).join('');
+    } catch (err) {
+      //
+    }
     if (shortcut == '') {
       shortcut = '<Control><Super>Space';
     }
+    
     if (!disable) {
       this.accel.listenFor(shortcut, this._toggle_search_light.bind(this));
     }
