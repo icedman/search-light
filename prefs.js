@@ -77,6 +77,7 @@ function fillPreferencesWindow(window) {
   let builder = new Gtk.Builder();
 
   builder.add_from_file(`${UIFolderPath}/general.ui`);
+  builder.add_from_file(`${UIFolderPath}/accelerator.ui`);
   builder.add_from_file(`${UIFolderPath}/menu.ui`);
   window.add(builder.get_object('general'));
   window.set_search_enabled(true);
@@ -93,5 +94,5 @@ function fillPreferencesWindow(window) {
   // shortcuts widget
 
   let placeholder = builder.get_object('shortcut-search-placeholder');
-  placeholder.append(new ShortcutSettingWidget(settings, 'shortcut-search'));
+  placeholder.append(new ShortcutSettingWidget(builder.get_object('accelerator'), settings, 'shortcut-search'));
 }

@@ -1,6 +1,6 @@
 // https://github.com/eonpatapon/gnome-shell-extension-caffeine
 
-const { Adw, Gdk, Gio, GLib, GObject, Gtk, Pango } = imports.gi;
+const { Gdk, Gio, GLib, GObject, Gtk, Pango } = imports.gi;
 const genParam = (type, name, ...dflt) =>
   GObject.ParamSpec[type](
     name,
@@ -27,11 +27,12 @@ var ShortcutSettingWidget = class extends Gtk.Button {
     );
   }
 
-  constructor(settings, key) {
+  constructor(content, settings, key) {
     super({ valign: Gtk.Align.CENTER, has_frame: false });
     this._key = key;
     this._settings = settings;
 
+    this.content = content;
     this.connect('clicked', this._onActivated.bind(this));
 
     let label = new Gtk.ShortcutLabel({ disabled_text: _('New accelerator…') });
@@ -49,18 +50,14 @@ var ShortcutSettingWidget = class extends Gtk.Button {
   _onActivated(widget) {
     let ctl = new Gtk.EventControllerKey();
 
-    let content = new Adw.StatusPage({
-      title: _('New accelerator…'),
-      icon_name: 'preferences-desktop-keyboard-shortcuts-symbolic',
-    });
-
-    this._editor = new Adw.Window({
+    this._editor = new Gtk.Window({
+      title: 'Accelerator',
       modal: true,
       hide_on_close: true,
       transient_for: widget.get_root(),
       width_request: 480,
       height_request: 320,
-      content,
+      child: this.content,
     });
 
     this._editor.add_controller(ctl);
