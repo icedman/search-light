@@ -238,6 +238,7 @@ class Extension {
 
   _release_ui() {
     if (this._entry) {
+      this._restore_icons();
       this._entry.get_parent().remove_child(this._entry);
       this._entryParent.add_child(this._entry);
       this._entry = null;
@@ -268,10 +269,17 @@ class Extension {
 
   _resize_icons() {
     if (this._entry) {
+      if (!this._entry._originalHeight) {
+        this._entry._originalHeight = this._entry.height;
+      }
       this._entry.height = 60 * this.scaleFactor;
-
+      this._originalChildren = [];
       this._entry.get_children().forEach((c) => {
+        this._originalChildren.push(c);
         if (c.style_class == 'search-entry-icon') {
+          if (!c._originalIconSize) {
+            c._originalIconSize = c.icon_size;
+          }
           c.set_icon_size(28);
         } else {
           c.style = 'font-size: 18pt';
@@ -279,7 +287,25 @@ class Extension {
       });
     }
   }
-
+  
+  _restore_icons() {
+    if (this._entry && this._originalChildren) {
+      this._originalChildren.forEach((c) => {
+        if (c.style_class == 'search-entry-icon') {
+          if (c._originalIconSize) {
+            c.set_icon_size(c._originalIconSize);
+          }
+        } else {
+          c.style = '';
+        }
+      });
+      this._originalChildren = null;
+    }
+    if (this._entry._originalHeight) {
+      this._entry.height = this._entry._originalHeight;
+    }
+  }
+  
   _compute_size() {
     this._queryDisplay();
 
@@ -336,8 +362,8 @@ class Extension {
       height: 400,
       effect: new Shell.BlurEffect({
         name: 'blur',
-        brightness: 1.0,
-        sigma: 100,
+        brightness: 0.60, // 1.0,
+        sigma: 30, // 100,
         mode: Shell.BlurMode.ACTOR,
       }),
     });

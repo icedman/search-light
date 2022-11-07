@@ -4,18 +4,15 @@
     <property name="name">general</property>
     <property name="title" translatable="yes">General</property>
     <property name="icon-name">general-symbolic</property>
-
     <child>
       <object class="AdwPreferencesGroup">
         <property name="title" translatable="yes">Keybindings</property>
-        <property name="description" translatable="yes"></property>
-
+        <property name="description" translatable="yes"/>
         <child>
           <object class="AdwActionRow" id="key-binding-text">
             <property name="title" translatable="yes">Search</property>
             <property name="subtitle" translatable="yes">Set keyboard shortcut to popup Search box. Backspace to clear.
             </property>
-
             <child>
               <object class="GtkBox" id="shortcut-search-placeholder">
                 <property name="margin-start">6</property>
@@ -24,23 +21,18 @@
                 <property name="margin-bottom">6</property>
               </object>
             </child>
-
           </object>
         </child>
       </object>
     </child>
-
     <child>
       <object class="AdwPreferencesGroup">
         <property name="title" translatable="yes">Multi-Monitor</property>
-        <property name="description" translatable="yes"></property>
-
+        <property name="description" translatable="yes"/>
         <child>
           <object class="AdwActionRow">
             <property name="title" translatable="yes">Preferred Monitor</property>
-            <property name="subtitle" translatable="yes"
-              >Show search box on selected monitor.</property
-            >
+            <property name="subtitle" translatable="yes">Show search box on selected monitor.</property>
             <property name="activatable-widget">preferred-monitor</property>
             <child>
               <object class="GtkDropDown" id="preferred-monitor">
@@ -50,13 +42,10 @@
             </child>
           </object>
         </child>
-
         <child>
           <object class="AdwActionRow" id="popup-at-cursor-monitor-row">
             <property name="title" translatable="yes">Popup at Cursor Monitor</property>
-            <property name="subtitle" translatable="yes"
-              >Show search box at the monitor where cursor is located.</property
-            >
+            <property name="subtitle" translatable="yes">Show search box at the monitor where cursor is located.</property>
             <property name="activatable-widget">popup-at-cursor-monitor</property>
             <child>
               <object class="GtkSwitch" id="popup-at-cursor-monitor">
@@ -67,18 +56,15 @@
         </child>
       </object>
     </child>
-
     <child>
       <object class="AdwPreferencesGroup">
         <property name="title" translatable="yes">Appearance</property>
-        <property name="description" translatable="yes"></property>
-
+        <property name="description" translatable="yes"/>
         <child>
           <object class="AdwActionRow">
             <property name="title" translatable="yes">Background Color</property>
             <property name="subtitle" translatable="yes">Set search window background color.</property>
             <property name="activatable-widget">background-color</property>
-
             <child>
               <object class="GtkColorButton" id="background-color">
                 <property name="valign">center</property>
@@ -91,15 +77,10 @@
             </child>
           </object>
         </child>
-
         <child>
           <object class="AdwActionRow">
-            <property name="title" translatable="yes"
-              >Border Radius</property
-            >
-            <property name="subtitle" translatable="yes"
-              >Set window background border radius.</property
-            >
+            <property name="title" translatable="yes">Border Radius</property>
+            <property name="subtitle" translatable="yes">Set window background border radius.</property>
             <property name="activatable-widget">border-radius</property>
             <child>
               <object class="GtkScale" id="border-radius">
@@ -115,13 +96,10 @@
             </child>
           </object>
         </child>
-
         <child>
           <object class="AdwActionRow">
             <property name="title" translatable="yes">Width</property>
-            <property name="subtitle" translatable="yes"
-              >Set window width rescale.</property
-            >
+            <property name="subtitle" translatable="yes">Set window width rescale.</property>
             <property name="activatable-widget">scale-width</property>
             <child>
               <object class="GtkScale" id="scale-width">
@@ -137,13 +115,10 @@
             </child>
           </object>
         </child>
-
         <child>
           <object class="AdwActionRow">
             <property name="title" translatable="yes">Height</property>
-            <property name="subtitle" translatable="yes"
-              >Set window height rescale.</property
-            >
+            <property name="subtitle" translatable="yes">Set window height rescale.</property>
             <property name="activatable-widget">scale-height</property>
             <child>
               <object class="GtkScale" id="scale-height">
@@ -159,30 +134,24 @@
             </child>
           </object>
         </child>
-
       </object>
     </child>
-
   </object>
-
   <object class="GtkAdjustment" id="border-radius-adjust">
     <property name="lower">0</property>
     <property name="upper">7</property>
     <property name="step-increment">1</property>
   </object>
-
   <object class="GtkAdjustment" id="scale-width-adjust">
     <property name="lower">0.0</property>
     <property name="upper">1.0</property>
     <property name="step-increment">0.01</property>
   </object>
-
   <object class="GtkAdjustment" id="scale-height-adjust">
     <property name="lower">0.0</property>
     <property name="upper">1.0</property>
     <property name="step-increment">0.01</property>
   </object>
-
   <object class="GtkStringList" id="preferred-monitor-model">
     <items>
       <item translatable="yes">Primary Monitor</item>

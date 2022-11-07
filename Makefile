@@ -36,5 +36,9 @@ test-prefs:
 lint:
 	eslint ./
 
+xml-lint:
+	cd ui ; \
+	find . -name "*.ui" -type f -exec xmllint --output '{}' --format '{}' \;
+
 pretty:
 	prettier --single-quote --write "**/*.js"
