@@ -10,7 +10,7 @@
 
 #searchLightBox {
   padding: 14px;
-  border-radius: 16px;
+  /*border-radius: 16px;*/
   border: 0px;
   box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
 }
@@ -50,48 +50,56 @@
 
 #searchLight.border-radius-0 #searchLightBlurredBackground,
 #searchLight.border-radius-0 StBoxLayout.search-section-content,
-#searchLight.border-radius-0 {
+#searchLight.border-radius-0,
+#searchLightBox.border-radius-0 {
   border-radius: 0px !important;
 }
 
 #searchLight.border-radius-1 #searchLightBlurredBackground,
 #searchLight.border-radius-1 StBoxLayout.search-section-content,
-#searchLight.border-radius-1 {
+#searchLight.border-radius-1,
+#searchLightBox.border-radius-1 {
   border-radius: 8px !important;
 }
 
 #searchLight.border-radius-2 #searchLightBlurredBackground,
 #searchLight.border-radius-2 StBoxLayout.search-section-content,
-#searchLight.border-radius-2 {
+#searchLight.border-radius-2,
+#searchLightBox.border-radius-2 {
   border-radius: 16px !important;
 }
 
 #searchLight.border-radius-3 #searchLightBlurredBackground,
 #searchLight.border-radius-3 StBoxLayout.search-section-content,
-#searchLight.border-radius-3 {
+#searchLight.border-radius-3,
+#searchLightBox.border-radius-3 {
   border-radius: 20px !important;
 }
 
 #searchLight.border-radius-4 #searchLightBlurredBackground,
 #searchLight.border-radius-4 StBoxLayout.search-section-content,
-#searchLight.border-radius-4 {
+#searchLight.border-radius-4,
+#searchLightBox.border-radius-4 {
   border-radius: 24px !important;
 }
 
 #searchLight.border-radius-5 #searchLightBlurredBackground,
 #searchLight.border-radius-5 StBoxLayout.search-section-content,
-#searchLight.border-radius-5 {
+#searchLight.border-radius-5,
+#searchLightBox.border-radius-5 {
   border-radius: 28px !important;
 }
 
 #searchLight.border-radius-6 #searchLightBlurredBackground,
 #searchLight.border-radius-6 StBoxLayout.search-section-content,
-#searchLight.border-radius-6 {
+#searchLight.border-radius-6,
+#searchLightBox.border-radius-6 {
   border-radius: 32px !important;
 }
 
 #searchLight.border-radius-7 #searchLightBlurredBackground,
 #searchLight.border-radius-7 StBoxLayout.search-section-content,
-#searchLight.border-radius-7 {
+#searchLight.border-radius-7,
+#searchLightBox.border-radius-7 {
   border-radius: 48px !important;
 }
