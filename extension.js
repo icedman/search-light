@@ -81,6 +81,9 @@ class Extension {
       let key = SettingsKeys.getKey(k);
       let name = k.replace(/-/g, '_');
       this[name] = key.value;
+      if (key.options) {
+        this[`${name}_options`] = key.options;
+      }
       // log(`${name} ${key.value}`);
     });
 
@@ -225,7 +228,6 @@ class Extension {
     this._search = Main.uiGroup.find_child_by_name('searchController');
     this._searchResults = this._search._searchResults;
     this._searchParent = this._search.get_parent();
-    this._resize_icons();
 
     if (this._entry.get_parent()) {
       this._entry.get_parent().remove_child(this._entry);
@@ -244,7 +246,6 @@ class Extension {
       () => {
         this.container.set_size(this.width, this.height);
         this.mainContainer.set_size(this.width, this.height);
-        this._resize_icons();
         this._search.show();
       }
     );
@@ -263,7 +264,6 @@ class Extension {
     }
 
     if (this._entry) {
-      this._restore_icons();
       this._entry.get_parent().remove_child(this._entry);
       this._entryParent.add_child(this._entry);
       this._entry = null;
@@ -292,45 +292,6 @@ class Extension {
     }
   }
 
-  _resize_icons() {
-    if (this._entry) {
-      if (!this._entry._originalHeight) {
-        this._entry._originalHeight = this._entry.height;
-      }
-      this._entry.height = 60 * this.scaleFactor;
-      this._originalChildren = [];
-      this._entry.get_children().forEach((c) => {
-        this._originalChildren.push(c);
-        if (c.style_class == 'search-entry-icon') {
-          if (!c._originalIconSize) {
-            c._originalIconSize = c.icon_size;
-          }
-          c.set_icon_size(28);
-        } else {
-          c.style = 'font-size: 18pt';
-        }
-      });
-    }
-  }
-
-  _restore_icons() {
-    if (this._entry && this._originalChildren) {
-      this._originalChildren.forEach((c) => {
-        if (c.style_class == 'search-entry-icon') {
-          if (c._originalIconSize) {
-            c.set_icon_size(c._originalIconSize);
-          }
-        } else {
-          c.style = '';
-        }
-      });
-      this._originalChildren = null;
-    }
-    if (this._entry._originalHeight) {
-      this._entry.height = this._entry._originalHeight;
-    }
-  }
-
   _compute_size() {
     this._queryDisplay();
 
@@ -340,20 +301,30 @@ class Extension {
     this.height =
       400 + ((this.sh * this.scaleFactor) / 2) * (this.scale_height || 0);
 
-    // text size
-    Main._searchLight._search._text.height = 44 * this.scaleFactor;
-    Main._searchLight._search._text.get_parent().height = 50 * this.scaleFactor;
-
     // initial height
-    this.initial_height = 44 * 2 * this.scaleFactor;
+    let font_size = 14;
+    if (this.font_size) {
+      font_size = this.font_size_options[this.font_size];
+    }
+    if (this.entry_font_size) {
+      font_size = this.entry_font_size_options[this.entry_font_size];
+    }
+
+    let padding = {
+      14: 14 * 2.5,
+      16: 16 * 2.5,
+      18: 18 * 2.4,
+      20: 20 * 2.2,
+      22: 22 * 2,
+      24: 24 * 1.8,
+    };
+    this.initial_height = padding[font_size] * this.scaleFactor;
+    this.initial_height += font_size * 2 * this.scaleFactor;
 
     // position
     let x = this.sw / 2 - this.width / 2;
     let y = this.sh / 2 - this.height / 2;
     this._visible = true;
-
-    // this.container.set_size(this.width, this.initial_height);
-    // this.container.set_position(this.monitor.x + x, this.monitor.y + y);
 
     this.container.set_size(this.width, this.initial_height);
     this.mainContainer.set_size(this.width, this.initial_height);
@@ -361,7 +332,6 @@ class Extension {
 
     // background
     if (this._background) {
-      // this._background.set_position(this.monitor.x - x, this.monitor.y - y);
       this._background.set_position(0, 0);
       this._background.set_size(this.monitor.width, this.monitor.height);
     }
@@ -448,6 +418,34 @@ class Extension {
       for (let i = 0; i < 8; i++) {
         if (i != r) {
           this.container.remove_style_class_name(`border-radius-${i}`);
+        }
+      }
+    }
+
+    if (this.font_size !== null) {
+      let r = -1;
+      if (!disable) {
+        r = this.font_size_options[this.font_size];
+        this.container.add_style_class_name(`font-${r}`);
+      }
+      for (let i = 0; i < 8; i++) {
+        let ii = this.font_size_options[i];
+        if (ii != r) {
+          this.container.remove_style_class_name(`font-${ii}`);
+        }
+      }
+    }
+
+    if (this.entry_font_size !== null) {
+      let r = -1;
+      if (!disable) {
+        r = this.entry_font_size_options[this.entry_font_size];
+        this._entry.add_style_class_name(`entry-font-${r}`);
+      }
+      for (let i = 0; i < 8; i++) {
+        let ii = this.entry_font_size_options[i];
+        if (ii != r) {
+          this._entry.remove_style_class_name(`entry-font-${ii}`);
         }
       }
     }

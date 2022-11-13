@@ -15,22 +15,59 @@
 }
 
 #searchLightBox * {
-  font-size: 14pt !important;
+  /*font-size: 14pt !important;*/
 }
 
 #searchLightBox.light * {
   color: black;
 }
 
-#searchLightBox > StEntry.slc:focus,
-#searchLightBox > StEntry.slc {
+#searchLightBox > StEntry:focus,
+#searchLightBox > StEntry {
 	margin-top: 0px !important;
   margin-bottom: 20px !important;
 	border-radius: 8px;
   border: 0px !important;
   border-width: 0px !important;
   background: rgba(0,0,0,0);
+  /*font-size: 14pt !important;*/
+}
+
+
+#searchLightBox.font-16 * {
+  font-size: 16pt !important;
+}
+#searchLightBox > StEntry.entry-font-16:focus,
+#searchLightBox > StEntry.entry-font-16 {
+  font-size: 16pt !important;
+}
+#searchLightBox.font-18 * {
+  font-size: 18pt !important;
+}
+#searchLightBox > StEntry.entry-font-18:focus,
+#searchLightBox > StEntry.entry-font-18 {
+  font-size: 18pt !important;
+}
+#searchLightBox.font-20 * {
   font-size: 20pt !important;
+}
+#searchLightBox > StEntry.entry-font-20:focus,
+#searchLightBox > StEntry.entry-font-20 {
+  font-size: 20pt !important;
+}
+#searchLightBox.font-22 * {
+  font-size: 22pt !important;
+}
+#searchLightBox> StEntry.entry-font-22:focus,
+#searchLightBox> StEntry.entry-font-22 {
+  font-size: 22pt !important;
+}
+#searchLightBox.font-24 * {
+  font-size: 24pt !important;
+}
+#searchLightBox > StEntry.entry-font-24:focus,
+#searchLightBox > StEntry.entry-font-24 {
+  font-size: 24pt !important;
 }
 
 #searchLightBox .app-well-app {

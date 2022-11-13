@@ -62,4 +62,14 @@ SettingsKeys.setKeys({
     default_value: 0.6,
     widget_type: 'scale',
   },
+  'font-size': {
+    default_value: 0,
+    widget_type: 'dropdown',
+    options: [0, 16, 18, 20, 22, 24],
+  },
+  'entry-font-size': {
+    default_value: 0,
+    widget_type: 'dropdown',
+    options: [0, 16, 18, 20, 22, 24],
+  },
 });

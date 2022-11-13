@@ -6,6 +6,38 @@
     <property name="icon-name">overview-symbolic</property>
     <child>
       <object class="AdwPreferencesGroup">
+        <property name="title" translatable="yes">Text</property>
+        <property name="description" translatable="yes"/>
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Text Size</property>
+            <property name="subtitle" translatable="yes">Set font size of search text and search result items.</property>
+            <property name="activatable-widget">font-size</property>
+            <child>
+              <object class="GtkDropDown" id="font-size">
+                <property name="valign">center</property>
+                <property name="model">font-size-model</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Search Text Size</property>
+            <property name="subtitle" translatable="yes">Set font size for search input text.</property>
+            <property name="activatable-widget">entry-font-size</property>
+            <child>
+              <object class="GtkDropDown" id="entry-font-size">
+                <property name="valign">center</property>
+                <property name="model">entry-font-size-model</property>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
+    <child>
+      <object class="AdwPreferencesGroup">
         <property name="title" translatable="yes">Appearance</property>
         <property name="description" translatable="yes"/>
         <child>
@@ -191,6 +223,25 @@
       <item translatable="yes">None</item>
       <item>1px</item>
       <item>2px</item>
+    </items>
+  </object>
+  <object class="GtkStringList" id="font-size-model">
+    <items>
+      <item translatable="yes">Default</item>
+      <item>16pt</item>
+      <item>18pt</item>
+      <item>20pt</item>
+      <item>22pt</item>
+    </items>
+  </object>
+  <object class="GtkStringList" id="entry-font-size-model">
+    <items>
+      <item translatable="yes">Default</item>
+      <item>16pt</item>
+      <item>18pt</item>
+      <item>20pt</item>
+      <item>22pt</item>
+      <item>24pt</item>
     </items>
   </object>
   <object class="GtkAdjustment" id="blur-sigma-adjust">
