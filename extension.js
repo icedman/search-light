@@ -372,6 +372,7 @@ class Extension {
   }
 
   show() {
+    if (Main.overview.visible) return;
     this._acquire_ui();
     this._update_css();
     this._compute_size();
