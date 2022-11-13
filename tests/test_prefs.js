@@ -164,8 +164,10 @@ app.connect('activate', (me) => {
 
   let builder = new Gtk.Builder();
   builder.add_from_file(`ui/general.ui`);
+  builder.add_from_file(`ui/appearance.ui`);
   builder.add_from_file(`ui/menu.ui`);
   w.add(builder.get_object('general'));
+  w.add(builder.get_object('appearance'));
 
   let menu_util = builder.get_object('menu_util');
   w.add(menu_util);

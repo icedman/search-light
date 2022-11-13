@@ -29,15 +29,28 @@ const Me = ExtensionUtils.getCurrentExtension();
 const { schemaId, settingsKeys, SettingsKeys } = Me.imports.preferences.keys;
 
 const KeyboardShortcuts = Me.imports.keybinding.KeyboardShortcuts;
-
-const runSequence = Me.imports.utils.runSequence;
-const runOneShot = Me.imports.utils.runOneShot;
-const runLoop = Me.imports.utils.runLoop;
-const beginTimer = Me.imports.utils.beginTimer;
-const clearAllTimers = Me.imports.utils.clearAllTimers;
-const getRunningTimers = Me.imports.utils.getRunningTimers;
+const Timer = Me.imports.timer.Timer;
 
 const _ = ExtensionUtils.gettext;
+
+var SearchLight = GObject.registerClass(
+  {},
+  class SearchLight extends St.Widget {
+    _init() {
+      super._init();
+      this.name = 'dashContainer';
+      this.offscreen_redirect = Clutter.OffscreenRedirect.ALWAYS;
+      this.layout_manager = new Clutter.BinLayout();
+      this.reactive = true;
+      this.hoverable = true;
+    }
+
+    vfunc_scroll_event(scrollEvent) {
+      return Clutter.EVENT_PROPAGATE;
+      // return Clutter.EVENT_STOP;
+    }
+  }
+);
 
 class Extension {
   constructor(uuid) {
@@ -48,6 +61,9 @@ class Extension {
 
   enable() {
     Main._searchLight = this;
+
+    this._hiTimer = new Timer();
+    this._hiTimer.warmup(15);
 
     this._settings = ExtensionUtils.getSettings(schemaId);
     this._settingsKeys = SettingsKeys;
@@ -65,14 +81,14 @@ class Extension {
       let key = SettingsKeys.getKey(k);
       let name = k.replace(/-/g, '_');
       this[name] = key.value;
+      if (key.options) {
+        this[`${name}_options`] = key.options;
+      }
       // log(`${name} ${key.value}`);
     });
 
-    this.mainContainer = new St.Widget({
-      name: 'searchLight',
-      offscreen_redirect: Clutter.OffscreenRedirect.ALWAYS,
-      layout_manager: new Clutter.BinLayout(),
-    });
+    this.mainContainer = new SearchLight();
+    this.mainContainer._delegate = this;
     this.container = new St.BoxLayout({
       name: 'searchLightBox',
       vertical: true,
@@ -131,7 +147,8 @@ class Extension {
       this.container = null;
     }
 
-    clearAllTimers();
+    this._hiTimer.stop();
+    this._hiTimer = null;
   }
 
   _updateShortcut(disable) {
@@ -211,7 +228,6 @@ class Extension {
     this._search = Main.uiGroup.find_child_by_name('searchController');
     this._searchResults = this._search._searchResults;
     this._searchParent = this._search.get_parent();
-    this._resize_icons();
 
     if (this._entry.get_parent()) {
       this._entry.get_parent().remove_child(this._entry);
@@ -230,13 +246,23 @@ class Extension {
       () => {
         this.container.set_size(this.width, this.height);
         this.mainContainer.set_size(this.width, this.height);
-        this._resize_icons();
         this._search.show();
       }
     );
+
+    // this._windowCreatedId = global.display.connect('window-created', () => {
+    //   this._hiTimer.runOnce(() => {
+    //     this.hide();
+    //   }, 10);
+    // });
   }
 
   _release_ui() {
+    if (this._windowCreatedId) {
+      global.display.disconnect(this._windowCreatedId);
+      this._windowCreatedId = null;
+    }
+
     if (this._entry) {
       this._entry.get_parent().remove_child(this._entry);
       this._entryParent.add_child(this._entry);
@@ -266,20 +292,6 @@ class Extension {
     }
   }
 
-  _resize_icons() {
-    if (this._entry) {
-      this._entry.height = 60 * this.scaleFactor;
-
-      this._entry.get_children().forEach((c) => {
-        if (c.style_class == 'search-entry-icon') {
-          c.set_icon_size(28);
-        } else {
-          c.style = 'font-size: 18pt';
-        }
-      });
-    }
-  }
-
   _compute_size() {
     this._queryDisplay();
 
@@ -289,20 +301,30 @@ class Extension {
     this.height =
       400 + ((this.sh * this.scaleFactor) / 2) * (this.scale_height || 0);
 
-    // text size
-    Main._searchLight._search._text.height = 44 * this.scaleFactor;
-    Main._searchLight._search._text.get_parent().height = 50 * this.scaleFactor;
-
     // initial height
-    this.initial_height = 44 * 2 * this.scaleFactor;
+    let font_size = 14;
+    if (this.font_size) {
+      font_size = this.font_size_options[this.font_size];
+    }
+    if (this.entry_font_size) {
+      font_size = this.entry_font_size_options[this.entry_font_size];
+    }
+
+    let padding = {
+      14: 14 * 2.5,
+      16: 16 * 2.5,
+      18: 18 * 2.4,
+      20: 20 * 2.2,
+      22: 22 * 2,
+      24: 24 * 1.8,
+    };
+    this.initial_height = padding[font_size] * this.scaleFactor;
+    this.initial_height += font_size * 2 * this.scaleFactor;
 
     // position
     let x = this.sw / 2 - this.width / 2;
     let y = this.sh / 2 - this.height / 2;
     this._visible = true;
-
-    // this.container.set_size(this.width, this.initial_height);
-    // this.container.set_position(this.monitor.x + x, this.monitor.y + y);
 
     this.container.set_size(this.width, this.initial_height);
     this.mainContainer.set_size(this.width, this.initial_height);
@@ -310,16 +332,12 @@ class Extension {
 
     // background
     if (this._background) {
-      // this._background.set_position(this.monitor.x - x, this.monitor.y - y);
       this._background.set_position(0, 0);
       this._background.set_size(this.monitor.width, this.monitor.height);
-      this._background.show();
     }
   }
 
   _setupBackground() {
-    return; // disable for now
-
     if (this._background && this._background.get_parent()) {
       this._background.get_parent().remove_child(this._background);
     }
@@ -327,6 +345,12 @@ class Extension {
     this._bgActor = new Meta.BackgroundActor();
     let background = Main.layoutManager._backgroundGroup.get_child_at_index(0);
     this._bgActor.set_content(background.get_content());
+    this._blurEffect = new Shell.BlurEffect({
+      name: 'blur',
+      brightness: this.blur_brightness,
+      sigma: this.blur_sigma,
+      mode: Shell.BlurMode.ACTOR,
+    });
     let background_parent = new St.Widget({
       name: 'searchLightBlurredBackground',
       layout_manager: new Clutter.BinLayout(),
@@ -334,12 +358,7 @@ class Extension {
       y: 0,
       width: 400,
       height: 400,
-      effect: new Shell.BlurEffect({
-        name: 'blur',
-        brightness: 1.0,
-        sigma: 100,
-        mode: Shell.BlurMode.ACTOR,
-      }),
+      effect: this._blurEffect,
     });
 
     background_parent.add_child(this._bgActor);
@@ -358,11 +377,9 @@ class Extension {
     this._compute_size();
     this.mainContainer.show();
 
-    beginTimer(
-      runOneShot(() => {
-        this._compute_size();
-      }, 0)
-    );
+    this._hiTimer.runOnce(() => {
+      this._compute_size();
+    }, 10);
 
     this._add_events();
   }
@@ -378,7 +395,19 @@ class Extension {
     let bg = this.background_color || [0, 0, 0, 0.5];
     let clr = bg.map((r) => Math.floor(255 * r));
     clr[3] = bg[3];
-    this.container.style = `background: rgba(${clr.join(',')})`;
+    let style = `background: rgba(${clr.join(',')});`;
+
+    let border_style = '';
+    if (this.border_thickness) {
+      let bg = this.border_color || [1, 1, 1, 1];
+      let clr = bg.map((r) => Math.floor(255 * r));
+      clr[3] = bg[3];
+      border_style = `border: ${this.border_thickness}px solid rgba(${clr.join(
+        ','
+      )});`;
+    }
+
+    this.container.style = `${style}${border_style}`;
 
     if (this.border_radius !== null) {
       let r = -1;
@@ -393,11 +422,45 @@ class Extension {
       }
     }
 
+    if (this.font_size !== null) {
+      let r = -1;
+      if (!disable) {
+        r = this.font_size_options[this.font_size];
+        this.container.add_style_class_name(`font-${r}`);
+      }
+      for (let i = 0; i < 8; i++) {
+        let ii = this.font_size_options[i];
+        if (ii != r) {
+          this.container.remove_style_class_name(`font-${ii}`);
+        }
+      }
+    }
+
+    if (this.entry_font_size !== null) {
+      let r = -1;
+      if (!disable) {
+        r = this.entry_font_size_options[this.entry_font_size];
+        this._entry.add_style_class_name(`entry-font-${r}`);
+      }
+      for (let i = 0; i < 8; i++) {
+        let ii = this.entry_font_size_options[i];
+        if (ii != r) {
+          this._entry.remove_style_class_name(`entry-font-${ii}`);
+        }
+      }
+    }
+
     if (0.3 * bg[0] + 0.59 * bg[1] + 0.11 * bg[2] < 0.5) {
       this.container.remove_style_class_name('light');
     } else {
       this.container.add_style_class_name('light');
     }
+
+    // blurred backgrounds!
+    this._background.visible = this.blur_background;
+    this._background.opacity = 255; //Math.floor(this.background_color[3] * 255);
+    this._blurEffect.brightness = this.blur_brightness;
+    this._blurEffect.sigma = this.blur_sigma;
   }
 
   _toggle_search_light() {

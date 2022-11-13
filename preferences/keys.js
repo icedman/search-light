@@ -12,6 +12,15 @@ SettingsKeys.setKeys({
     default_value: 0,
     widget_type: 'scale',
   },
+  'border-thickness': {
+    default_value: 0,
+    widget_type: 'dropdown',
+    test: { values: [0, 1, 2, 3] },
+  },
+  'border-color': {
+    default_value: [1, 1, 1, 1],
+    widget_type: 'color',
+  },
   'scale-width': {
     default_value: 0.2,
     widget_type: 'scale',
@@ -40,5 +49,27 @@ SettingsKeys.setKeys({
   'popup-at-cursor-monitor': {
     default_value: false,
     widget_type: 'switch',
+  },
+  'blur-background': {
+    default_value: false,
+    widget_type: 'switch',
+  },
+  'blur-sigma': {
+    default_value: 30,
+    widget_type: 'scale',
+  },
+  'blur-brightness': {
+    default_value: 0.6,
+    widget_type: 'scale',
+  },
+  'font-size': {
+    default_value: 0,
+    widget_type: 'dropdown',
+    options: [0, 16, 18, 20, 22, 24],
+  },
+  'entry-font-size': {
+    default_value: 0,
+    widget_type: 'dropdown',
+    options: [0, 16, 18, 20, 22, 24],
   },
 });

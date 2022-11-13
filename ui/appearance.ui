@@ -1,0 +1,257 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <object class="AdwPreferencesPage" id="appearance">
+    <property name="name">appearance</property>
+    <property name="title" translatable="yes">Appearance</property>
+    <property name="icon-name">overview-symbolic</property>
+    <child>
+      <object class="AdwPreferencesGroup">
+        <property name="title" translatable="yes">Text</property>
+        <property name="description" translatable="yes"/>
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Text Size</property>
+            <property name="subtitle" translatable="yes">Set font size of search text and search result items.</property>
+            <property name="activatable-widget">font-size</property>
+            <child>
+              <object class="GtkDropDown" id="font-size">
+                <property name="valign">center</property>
+                <property name="model">font-size-model</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Search Text Size</property>
+            <property name="subtitle" translatable="yes">Set font size for search input text.</property>
+            <property name="activatable-widget">entry-font-size</property>
+            <child>
+              <object class="GtkDropDown" id="entry-font-size">
+                <property name="valign">center</property>
+                <property name="model">entry-font-size-model</property>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
+    <child>
+      <object class="AdwPreferencesGroup">
+        <property name="title" translatable="yes">Appearance</property>
+        <property name="description" translatable="yes"/>
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Width</property>
+            <property name="subtitle" translatable="yes">Set window width rescale.</property>
+            <property name="activatable-widget">scale-width</property>
+            <child>
+              <object class="GtkScale" id="scale-width">
+                <property name="valign">center</property>
+                <property name="hexpand">true</property>
+                <property name="width-request">140px</property>
+                <property name="draw-value">true</property>
+                <property name="value-pos">right</property>
+                <property name="orientation">horizontal</property>
+                <property name="digits">2</property>
+                <property name="adjustment">scale-width-adjust</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Height</property>
+            <property name="subtitle" translatable="yes">Set window height rescale.</property>
+            <property name="activatable-widget">scale-height</property>
+            <child>
+              <object class="GtkScale" id="scale-height">
+                <property name="valign">center</property>
+                <property name="hexpand">true</property>
+                <property name="width-request">140px</property>
+                <property name="draw-value">true</property>
+                <property name="value-pos">right</property>
+                <property name="orientation">horizontal</property>
+                <property name="digits">2</property>
+                <property name="adjustment">scale-height-adjust</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Border Thickness</property>
+            <property name="subtitle" translatable="yes">Set border thickness.</property>
+            <property name="activatable-widget">border-thickness</property>
+            <child>
+              <object class="GtkDropDown" id="border-thickness">
+                <property name="valign">center</property>
+                <property name="model">border-thickness-model</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Border Radius</property>
+            <property name="subtitle" translatable="yes">Set window border radius.</property>
+            <property name="activatable-widget">border-radius</property>
+            <child>
+              <object class="GtkScale" id="border-radius">
+                <property name="valign">center</property>
+                <property name="hexpand">true</property>
+                <property name="width-request">140px</property>
+                <property name="draw-value">false</property>
+                <property name="value-pos">right</property>
+                <property name="orientation">horizontal</property>
+                <property name="digits">0</property>
+                <property name="adjustment">border-radius-adjust</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Border Color</property>
+            <property name="subtitle" translatable="yes">Select border color.</property>
+            <property name="activatable-widget">border-color</property>
+            <child>
+              <object class="GtkColorButton" id="border-color">
+                <property name="valign">center</property>
+                <property name="hexpand">false</property>
+                <property name="width-request">70px</property>
+                <property name="height-request">45px</property>
+                <property name="show-editor">true</property>
+                <property name="use-alpha">true</property>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
+    <child>
+      <object class="AdwPreferencesGroup">
+        <property name="title" translatable="yes">Background</property>
+        <property name="description" translatable="yes"/>
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Background Color</property>
+            <property name="subtitle" translatable="yes">Set search window background color.</property>
+            <property name="activatable-widget">background-color</property>
+            <child>
+              <object class="GtkColorButton" id="background-color">
+                <property name="valign">center</property>
+                <property name="hexpand">false</property>
+                <property name="width-request">70px</property>
+                <property name="height-request">45px</property>
+                <property name="show-editor">true</property>
+                <property name="use-alpha">true</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Background Blur</property>
+            <property name="subtitle" translatable="yes">Add background blur with current wallpaper.</property>
+            <property name="activatable-widget">blur-background</property>
+            <child>
+              <object class="GtkSwitch" id="blur-background">
+                <property name="valign">center</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Sigma</property>
+            <property name="subtitle" translatable="yes">The intensity of the blur.</property>
+            <property name="activatable-widget">blur-sigma</property>
+            <child>
+              <object class="GtkScale" id="blur-sigma">
+                <property name="valign">center</property>
+                <property name="hexpand">true</property>
+                <property name="width-request">200px</property>
+                <property name="draw-value">true</property>
+                <property name="value-pos">right</property>
+                <property name="orientation">horizontal</property>
+                <property name="digits">0</property>
+                <property name="adjustment">blur-sigma-adjust</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Brightness</property>
+            <property name="subtitle" translatable="yes">The brightness of the blur effect, a high value might make the text harder to read.</property>
+            <property name="activatable-widget">blur-brightness</property>
+            <child>
+              <object class="GtkScale" id="blur-brightness">
+                <property name="valign">center</property>
+                <property name="hexpand">true</property>
+                <property name="width-request">200px</property>
+                <property name="draw-value">true</property>
+                <property name="value-pos">right</property>
+                <property name="orientation">horizontal</property>
+                <property name="digits">2</property>
+                <property name="adjustment">blur-brightness-adjust</property>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
+  </object>
+  <object class="GtkAdjustment" id="border-radius-adjust">
+    <property name="lower">0</property>
+    <property name="upper">7</property>
+    <property name="step-increment">1</property>
+  </object>
+  <object class="GtkAdjustment" id="scale-width-adjust">
+    <property name="lower">0.0</property>
+    <property name="upper">1.0</property>
+    <property name="step-increment">0.01</property>
+  </object>
+  <object class="GtkAdjustment" id="scale-height-adjust">
+    <property name="lower">0.0</property>
+    <property name="upper">1.0</property>
+    <property name="step-increment">0.01</property>
+  </object>
+  <object class="GtkStringList" id="border-thickness-model">
+    <items>
+      <item translatable="yes">None</item>
+      <item>1px</item>
+      <item>2px</item>
+    </items>
+  </object>
+  <object class="GtkStringList" id="font-size-model">
+    <items>
+      <item translatable="yes">Default</item>
+      <item>16pt</item>
+      <item>18pt</item>
+      <item>20pt</item>
+      <item>22pt</item>
+    </items>
+  </object>
+  <object class="GtkStringList" id="entry-font-size-model">
+    <items>
+      <item translatable="yes">Default</item>
+      <item>16pt</item>
+      <item>18pt</item>
+      <item>20pt</item>
+      <item>22pt</item>
+      <item>24pt</item>
+    </items>
+  </object>
+  <object class="GtkAdjustment" id="blur-sigma-adjust">
+    <property name="lower">0</property>
+    <property name="upper">200</property>
+    <property name="step-increment">1</property>
+  </object>
+  <object class="GtkAdjustment" id="blur-brightness-adjust">
+    <property name="lower">0.0</property>
+    <property name="upper">1.0</property>
+    <property name="step-increment">0.01</property>
+  </object>
+</interface>

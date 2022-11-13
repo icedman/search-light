@@ -14,19 +14,23 @@ var PrefKeys = class {
         key.default_value,
         key.widget_type,
         key.key_maps,
-        key.test
+        key.test,
+        key.callback,
+        key.options
       );
     });
   }
 
-  setKey(name, default_value, widget_type, key_maps, key_test) {
+  setKey(name, default_value, widget_type, maps, test, callback, options) {
     this._keys[name] = {
       name,
       default_value,
       widget_type,
       value: default_value,
-      maps: key_maps,
-      test: key_test,
+      maps: maps,
+      test: test,
+      callback,
+      options,
       object: null,
     };
   }
@@ -63,7 +67,7 @@ var PrefKeys = class {
     }
 
     if (this._keys[name].callback) {
-      this._keys[name].callback();
+      this._keys[name].callback(this._keys[name].value);
     }
   }
 
@@ -102,6 +106,15 @@ var PrefKeys = class {
       let key = keys[name];
       key.object = builder ? builder.get_object(key.name) : null;
       switch (key.widget_type) {
+        case 'json_array': {
+          key.value = [];
+          try {
+            key.value = JSON.parse(settings.get_string(name));
+          } catch (err) {
+            // fail silently
+          }
+          break;
+        }
         case 'switch': {
           key.value = settings.get_boolean(name);
           if (key.object) key.object.set_active(key.value);
@@ -149,6 +162,15 @@ var PrefKeys = class {
         settings.connect(`changed::${name}`, () => {
           let key = keys[name];
           switch (key.widget_type) {
+            case 'json_array': {
+              key.value = [];
+              try {
+                key.value = JSON.parse(settings.get_string(name));
+              } catch (err) {
+                // fail silently
+              }
+              break;
+            }
             case 'switch': {
               key.value = settings.get_boolean(name);
               break;
@@ -205,10 +227,18 @@ var PrefKeys = class {
       }
 
       switch (key.widget_type) {
+        case 'json_array': {
+          // unimplemented
+          break;
+        }
         case 'switch': {
+          key.object.set_active(key.default_value);
           signal_id = key.object.connect('state-set', (w) => {
             let value = w.get_active();
             self.setValue(name, value);
+            if (key.callback) {
+              key.callback(value);
+            }
           });
           break;
         }
