@@ -33,6 +33,25 @@ const Timer = Me.imports.timer.Timer;
 
 const _ = ExtensionUtils.gettext;
 
+var SearchLight = GObject.registerClass(
+  {},
+  class SearchLight extends St.Widget {
+    _init() {
+      super._init();
+      this.name = 'dashContainer';
+      this.offscreen_redirect = Clutter.OffscreenRedirect.ALWAYS;
+      this.layout_manager = new Clutter.BinLayout();
+      this.reactive = true;
+      this.hoverable = true;
+    }
+
+    vfunc_scroll_event(scrollEvent) {
+      return Clutter.EVENT_PROPAGATE;
+      // return Clutter.EVENT_STOP;
+    }
+  }
+);
+
 class Extension {
   constructor(uuid) {
     this._uuid = uuid;
@@ -65,11 +84,8 @@ class Extension {
       // log(`${name} ${key.value}`);
     });
 
-    this.mainContainer = new St.Widget({
-      name: 'searchLight',
-      offscreen_redirect: Clutter.OffscreenRedirect.ALWAYS,
-      layout_manager: new Clutter.BinLayout(),
-    });
+    this.mainContainer = new SearchLight();
+    this.mainContainer._delegate = this;
     this.container = new St.BoxLayout({
       name: 'searchLightBox',
       vertical: true,
@@ -296,7 +312,7 @@ class Extension {
       });
     }
   }
-  
+
   _restore_icons() {
     if (this._entry && this._originalChildren) {
       this._originalChildren.forEach((c) => {
@@ -314,7 +330,7 @@ class Extension {
       this._entry.height = this._entry._originalHeight;
     }
   }
-  
+
   _compute_size() {
     this._queryDisplay();
 
@@ -348,13 +364,10 @@ class Extension {
       // this._background.set_position(this.monitor.x - x, this.monitor.y - y);
       this._background.set_position(0, 0);
       this._background.set_size(this.monitor.width, this.monitor.height);
-      this._background.show();
     }
   }
 
   _setupBackground() {
-    return; // disable for now
-
     if (this._background && this._background.get_parent()) {
       this._background.get_parent().remove_child(this._background);
     }
@@ -362,6 +375,12 @@ class Extension {
     this._bgActor = new Meta.BackgroundActor();
     let background = Main.layoutManager._backgroundGroup.get_child_at_index(0);
     this._bgActor.set_content(background.get_content());
+    this._blurEffect = new Shell.BlurEffect({
+      name: 'blur',
+      brightness: this.blur_brightness,
+      sigma: this.blur_sigma,
+      mode: Shell.BlurMode.ACTOR,
+    });
     let background_parent = new St.Widget({
       name: 'searchLightBlurredBackground',
       layout_manager: new Clutter.BinLayout(),
@@ -369,12 +388,7 @@ class Extension {
       y: 0,
       width: 400,
       height: 400,
-      effect: new Shell.BlurEffect({
-        name: 'blur',
-        brightness: 0.60, // 1.0,
-        sigma: 30, // 100,
-        mode: Shell.BlurMode.ACTOR,
-      }),
+      effect: this._blurEffect,
     });
 
     background_parent.add_child(this._bgActor);
@@ -394,8 +408,8 @@ class Extension {
     this.mainContainer.show();
 
     this._hiTimer.runOnce(() => {
-        this._compute_size();
-      }, 10);
+      this._compute_size();
+    }, 10);
 
     this._add_events();
   }
@@ -411,7 +425,19 @@ class Extension {
     let bg = this.background_color || [0, 0, 0, 0.5];
     let clr = bg.map((r) => Math.floor(255 * r));
     clr[3] = bg[3];
-    this.container.style = `background: rgba(${clr.join(',')})`;
+    let style = `background: rgba(${clr.join(',')});`;
+
+    let border_style = '';
+    if (this.border_thickness) {
+      let bg = this.border_color || [1, 1, 1, 1];
+      let clr = bg.map((r) => Math.floor(255 * r));
+      clr[3] = bg[3];
+      border_style = `border: ${this.border_thickness}px solid rgba(${clr.join(
+        ','
+      )});`;
+    }
+
+    this.container.style = `${style}${border_style}`;
 
     if (this.border_radius !== null) {
       let r = -1;
@@ -431,6 +457,12 @@ class Extension {
     } else {
       this.container.add_style_class_name('light');
     }
+
+    // blurred backgrounds!
+    this._background.visible = this.blur_background;
+    this._background.opacity = 255; //Math.floor(this.background_color[3] * 255);
+    this._blurEffect.brightness = this.blur_brightness;
+    this._blurEffect.sigma = this.blur_sigma;
   }
 
   _toggle_search_light() {

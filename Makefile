@@ -40,5 +40,5 @@ xml-lint:
 	cd ui ; \
 	find . -name "*.ui" -type f -exec xmllint --output '{}' --format '{}' \;
 
-pretty:
+pretty: xml-lint
 	prettier --single-quote --write "**/*.js"

@@ -18,3 +18,6 @@ ctrl+cmd+space (change at the preference page)
 
 ![First Prototype](https://raw.githubusercontent.com/icedman/search-light/main/screenshots/screenshot.png)
 
+# Credits
+
+Blur-My-Shell for background blurring code.

@@ -2,9 +2,19 @@
 <schemalist gettext-domain="search-light">
   <schema path="/org/gnome/shell/extensions/search-light/" id="org.gnome.shell.extensions.search-light">
     <key type="d" name="border-radius">
-        <default>3</default>
+        <default>0</default>
         <summary>Border radius</summary>
-        <description>Set window background border radius.</description>
+        <description>Set dash background border radius.</description>
+    </key>
+    <key type="(dddd)" name="border-color">
+        <default>(1.,1.,1.,1.)</default>
+        <summary>border color</summary>
+        <description>Set dock border color.</description>
+    </key>
+    <key type="i" name="border-thickness">
+        <default>0</default>
+        <summary>Border thickness</summary>
+        <description>Border thickness.</description>
     </key>
     <key type="(dddd)" name="background-color">
         <default>(0.,0.,0.,0.25)</default>
@@ -50,6 +60,20 @@
         <default>""</default>
         <summary>MsgBus</summary>
         <description>Preferences-Extension message bus</description>
+    </key>
+    <key type="b" name="blur-background">
+        <default>false</default>
+        <summary>Enable background blur</summary>
+        <description></description>
+    </key>
+    <key type="d" name="blur-sigma">
+        <default>30</default>
+        <summary>Global sigma (gaussian blur radius) to use</summary>
+    </key>
+    <!-- BRIGHTNESS -->
+    <key type="d" name="blur-brightness">
+        <default>0.6</default>
+        <summary>Global brightness to use</summary>
     </key>
   </schema>
 </schemalist>

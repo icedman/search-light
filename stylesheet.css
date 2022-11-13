@@ -3,16 +3,14 @@
 }
 
 #searchLightBlurredBackground {
-  /*background-color: transparent !important;*/
-  /*background-color: rgba(255, 255, 255, 0.5) !important;*/
-  /*border: 20px !important;*/
+  /* this will hide the sharp corners of backgrounds */
+  border: 12px !important;
 }
 
 #searchLightBox {
   padding: 14px;
-  /*border-radius: 16px;*/
+  border-radius: 16px;
   border: 0px;
-  border-top: 2px solid rgba(255,200,0,1.0);
   box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
 }
 
