@@ -17,8 +17,7 @@ publish:
 	cp metadata.json ./build
 	cp stylesheet.css ./build
 	cp -r ui ./build
-	cp -r preferences ./build
-	cp README.md ./build
+	cp -r preferences ./build	cp README.md ./build
 	cp -R schemas ./build
 	rm -rf ./*.zip
 	cd build ; \
