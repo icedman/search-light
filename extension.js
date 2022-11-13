@@ -29,13 +29,7 @@ const Me = ExtensionUtils.getCurrentExtension();
 const { schemaId, settingsKeys, SettingsKeys } = Me.imports.preferences.keys;
 
 const KeyboardShortcuts = Me.imports.keybinding.KeyboardShortcuts;
-
-const runSequence = Me.imports.utils.runSequence;
-const runOneShot = Me.imports.utils.runOneShot;
-const runLoop = Me.imports.utils.runLoop;
-const beginTimer = Me.imports.utils.beginTimer;
-const clearAllTimers = Me.imports.utils.clearAllTimers;
-const getRunningTimers = Me.imports.utils.getRunningTimers;
+const Timer = Me.imports.timer.Timer;
 
 const _ = ExtensionUtils.gettext;
 
@@ -48,6 +42,9 @@ class Extension {
 
   enable() {
     Main._searchLight = this;
+
+    this._hiTimer = new Timer();
+    this._hiTimer.warmup(15);
 
     this._settings = ExtensionUtils.getSettings(schemaId);
     this._settingsKeys = SettingsKeys;
@@ -131,7 +128,8 @@ class Extension {
       this.container = null;
     }
 
-    clearAllTimers();
+    this._hiTimer.stop();
+    this._hiTimer = null;
   }
 
   _updateShortcut(disable) {
@@ -234,9 +232,20 @@ class Extension {
         this._search.show();
       }
     );
+
+    // this._windowCreatedId = global.display.connect('window-created', () => {
+    //   this._hiTimer.runOnce(() => {
+    //     this.hide();
+    //   }, 10);
+    // });
   }
 
   _release_ui() {
+    if (this._windowCreatedId) {
+      global.display.disconnect(this._windowCreatedId);
+      this._windowCreatedId = null;
+    }
+
     if (this._entry) {
       this._restore_icons();
       this._entry.get_parent().remove_child(this._entry);
@@ -384,11 +393,9 @@ class Extension {
     this._compute_size();
     this.mainContainer.show();
 
-    beginTimer(
-      runOneShot(() => {
+    this._hiTimer.runOnce(() => {
         this._compute_size();
-      }, 0)
-    );
+      }, 10);
 
     this._add_events();
   }
