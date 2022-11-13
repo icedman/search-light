@@ -9,7 +9,7 @@ make
 
 # Keybinding
 
-ctrl+cmd+space
+ctrl+cmd+space (change at the preference page)
 
 # Screenshots
 ![First Release](https://raw.githubusercontent.com/icedman/search-light/main/screenshots/Screenshot%20from%202022-11-03%2011-53-28.png)
