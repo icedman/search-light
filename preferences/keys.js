@@ -68,7 +68,7 @@ SettingsKeys.setKeys({
     options: [0, 16, 18, 20, 22, 24],
   },
   'entry-font-size': {
-    default_value: 0,
+    default_value: 1,
     widget_type: 'dropdown',
     options: [0, 16, 18, 20, 22, 24],
   },

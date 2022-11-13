@@ -79,7 +79,7 @@
         <summary>Text size</summary>
     </key>
     <key type="i" name="entry-font-size">
-        <default>0</default>
+        <default>1</default>
         <summary>Entry text size</summary>
     </key>
   </schema>
