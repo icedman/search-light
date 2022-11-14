@@ -372,19 +372,34 @@ class Extension {
   }
 
   show() {
+    if (Main.overview.visible) return;
+
+    let grab = Main.pushModal(this.mainContainer);
+    if (grab.get_seat_state() !== Clutter.GrabState.ALL) {
+      Main.popModal(grab);
+      grab = null;
+    }
+    this._grab = grab;
+
     this._acquire_ui();
     this._update_css();
     this._compute_size();
-    this.mainContainer.show();
 
     this._hiTimer.runOnce(() => {
       this._compute_size();
     }, 10);
 
     this._add_events();
+
+    this.mainContainer.show();
   }
 
   hide() {
+    if (this._grab) {
+      Main.popModal(this._grab);
+      this._grab = null;
+    }
+
     this._visible = false;
     this.mainContainer.hide();
     this._release_ui();
