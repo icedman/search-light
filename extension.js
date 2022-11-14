@@ -97,7 +97,7 @@ class Extension {
     Main.layoutManager.addChrome(this.mainContainer, {
       affectsStruts: false,
       affectsInputRegion: true,
-      trackFullscreen: true,
+      trackFullscreen: false,
     });
 
     this.mainContainer.add_child(this.container);
@@ -512,6 +512,7 @@ class Extension {
   }
 
   _onKeyPressed(obj, evt) {
+    if (!this._entry) return;
     let focus = global.stage.get_key_focus();
     if (!this._entry.contains(focus)) {
       this._search._text.get_parent().grab_key_focus();
