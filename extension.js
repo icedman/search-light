@@ -25,6 +25,7 @@ const { GObject, St, Clutter, Shell, Meta } = imports.gi;
 
 const ExtensionUtils = imports.misc.extensionUtils;
 const Main = imports.ui.main;
+const GrabHelper = imports.ui.grabHelper;
 const Me = ExtensionUtils.getCurrentExtension();
 const { schemaId, settingsKeys, SettingsKeys } = Me.imports.preferences.keys;
 
@@ -35,19 +36,13 @@ const _ = ExtensionUtils.gettext;
 
 var SearchLight = GObject.registerClass(
   {},
-  class SearchLight extends St.Widget {
+  class SearchLight extends St.Widget 
+  {
     _init() {
       super._init();
       this.name = 'dashContainer';
       this.offscreen_redirect = Clutter.OffscreenRedirect.ALWAYS;
       this.layout_manager = new Clutter.BinLayout();
-      this.reactive = true;
-      this.hoverable = true;
-    }
-
-    vfunc_scroll_event(scrollEvent) {
-      return Clutter.EVENT_PROPAGATE;
-      // return Clutter.EVENT_STOP;
     }
   }
 );
@@ -99,15 +94,11 @@ class Extension {
     this.hide();
     this.container._delegate = this;
 
-    if (Main.panel) {
-      // just above chrome
-      Main.uiGroup.insert_child_above(
-        this.mainContainer,
-        Main.panel.get_parent()
-      );
-    } else {
-      Main.uiGroup.add_child(this.mainContainer);
-    }
+    Main.layoutManager.addChrome(this.mainContainer, {
+      affectsStruts: false,
+      affectsInputRegion: true,
+      trackFullscreen: true,
+    });
 
     this.mainContainer.add_child(this.container);
     this._setupBackground();
@@ -141,10 +132,10 @@ class Extension {
     // this will release the ui
     this.hide();
 
-    if (this.container) {
-      this.container.get_parent().remove_child(this.container);
-      this.container.destroy();
-      this.container = null;
+    if (this.mainContainer) {
+      Main.layoutManager.removeChrome(this.mainContainer);
+      this.mainContainer.destroy();
+      this.mainContainer = null;
     }
 
     this._hiTimer.stop();
@@ -255,6 +246,8 @@ class Extension {
     //     this.hide();
     //   }, 10);
     // });
+
+    this._search._text.get_parent().grab_key_focus();
   }
 
   _release_ui() {
@@ -328,7 +321,7 @@ class Extension {
 
     this.container.set_size(this.width, this.initial_height);
     this.mainContainer.set_size(this.width, this.initial_height);
-    this.mainContainer.set_position(this.monitor.x + x, this.monitor.y + y);
+    this.mainContainer.set_position(x, y);
 
     // background
     if (this._background) {
@@ -374,13 +367,6 @@ class Extension {
   show() {
     if (Main.overview.visible) return;
 
-    let grab = Main.pushModal(this.mainContainer);
-    if (grab.get_seat_state() !== Clutter.GrabState.ALL) {
-      Main.popModal(grab);
-      grab = null;
-    }
-    this._grab = grab;
-
     this._acquire_ui();
     this._update_css();
     this._compute_size();
@@ -395,11 +381,6 @@ class Extension {
   }
 
   hide() {
-    if (this._grab) {
-      Main.popModal(this._grab);
-      this._grab = null;
-    }
-
     this._visible = false;
     this.mainContainer.hide();
     this._release_ui();
