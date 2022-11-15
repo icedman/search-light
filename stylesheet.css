@@ -8,7 +8,7 @@
 }
 
 #searchLightBox {
-  padding: 14px;
+  /*padding: 14px;*/
   border-radius: 16px;
   border: 0px;
   box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
@@ -24,6 +24,7 @@
 
 #searchLightBox > StEntry:focus,
 #searchLightBox > StEntry {
+  padding: 18px!important;
 	margin-top: 0px !important;
   margin-bottom: 20px !important;
 	border-radius: 8px;
@@ -138,4 +139,9 @@
 #searchLight.border-radius-7,
 #searchLightBox.border-radius-7 {
   border-radius: 48px !important;
+}
+
+#searchLight #searchResultsContent {
+  padding-left: 10px;
+  padding-right: 10px;
 }
