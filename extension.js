@@ -31,13 +31,13 @@ const { schemaId, settingsKeys, SettingsKeys } = Me.imports.preferences.keys;
 
 const KeyboardShortcuts = Me.imports.keybinding.KeyboardShortcuts;
 const Timer = Me.imports.timer.Timer;
+const Style = Me.imports.style.Style;
 
 const _ = ExtensionUtils.gettext;
 
 var SearchLight = GObject.registerClass(
   {},
-  class SearchLight extends St.Widget 
-  {
+  class SearchLight extends St.Widget {
     _init() {
       super._init();
       this.name = 'searchLight';
@@ -56,6 +56,7 @@ class Extension {
 
   enable() {
     Main._searchLight = this;
+    this._style = new Style();
 
     this._hiTimer = new Timer();
     this._hiTimer.warmup(15);
@@ -67,6 +68,9 @@ class Extension {
       let n = name.replace(/-/g, '_');
       this[n] = value;
       switch (name) {
+        case 'text-color':
+          this._updateCustomColor();
+          break;
         case 'shortcut-search':
           this._updateShortcut();
           break;
@@ -107,6 +111,7 @@ class Extension {
     this.accel.enable();
 
     this._updateShortcut();
+    this._updateCustomColor();
 
     Main.overview.connectObject(
       'overview-showing',
@@ -120,6 +125,9 @@ class Extension {
   }
 
   disable() {
+    this._style.unloadAll();
+    this._style = null;
+
     SettingsKeys.disconnectSettings();
     this._settings = null;
 
@@ -460,6 +468,27 @@ class Extension {
     this._blurEffect.sigma = this.blur_sigma;
   }
 
+  _updateCustomColor(disable) {
+    if (disable) {
+      return;
+    }
+
+    let bg = this.text_color || [0, 0, 0, 0];
+    let clr = bg.map((r) => Math.floor(255 * r));
+    clr[3] = bg[3];
+
+    let styles = [];
+    if (bg[3] > 0) {
+      styles.push(
+        `#searchLightBox * { color: rgba(${clr.join(',')}) !important }`
+      );
+    } else {
+      styles.push('/* empty */');
+    }
+
+    log(styles);
+    this._style.build('custom', styles);
+  }
   _toggle_search_light() {
     if (this._inOverview) return;
     if (!this._visible) {

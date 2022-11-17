@@ -15,7 +15,7 @@
 }
 
 #searchLightBox * {
-  /*font-size: 14pt !important;*/
+  color:  white;
 }
 
 #searchLightBox.light * {

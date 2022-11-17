@@ -72,4 +72,12 @@ SettingsKeys.setKeys({
     widget_type: 'dropdown',
     options: [0, 16, 18, 20, 22, 24],
   },
+  'text-color': {
+    default_value: [1, 1, 1, 0],
+    widget_type: 'color',
+  },
+  'entry-text-color': {
+    default_value: [1, 1, 1, 0],
+    widget_type: 'color',
+  },
 });

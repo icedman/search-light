@@ -10,6 +10,41 @@
         <property name="description" translatable="yes"/>
         <child>
           <object class="AdwActionRow">
+            <property name="title" translatable="yes">Text Color</property>
+            <property name="subtitle" translatable="yes">Select text color. Make value completely transparent to auto-adapt to background color.</property>
+            <property name="activatable-widget">text-color</property>
+            <child>
+              <object class="GtkColorButton" id="text-color">
+                <property name="valign">center</property>
+                <property name="hexpand">false</property>
+                <property name="width-request">70px</property>
+                <property name="height-request">45px</property>
+                <property name="show-editor">true</property>
+                <property name="use-alpha">true</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="AdwActionRow">
+            <property name="visible">false</property>
+            <property name="title" translatable="yes">Entry Text Color</property>
+            <property name="subtitle" translatable="yes">Select entry text color.</property>
+            <property name="activatable-widget">entry-text-color</property>
+            <child>
+              <object class="GtkColorButton" id="entry-text-color">
+                <property name="valign">center</property>
+                <property name="hexpand">false</property>
+                <property name="width-request">70px</property>
+                <property name="height-request">45px</property>
+                <property name="show-editor">true</property>
+                <property name="use-alpha">true</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="AdwActionRow">
             <property name="title" translatable="yes">Text Size</property>
             <property name="subtitle" translatable="yes">Set font size of search text and search result items.</property>
             <property name="activatable-widget">font-size</property>
