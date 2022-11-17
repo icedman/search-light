@@ -455,10 +455,15 @@ class Extension {
       }
     }
 
-    if (0.3 * bg[0] + 0.59 * bg[1] + 0.11 * bg[2] < 0.5) {
-      this.container.remove_style_class_name('light');
+
+    if (this.text_color && this.text_color[3] > 0) {
+        this.container.remove_style_class_name('light');
     } else {
-      this.container.add_style_class_name('light');
+      if (0.3 * bg[0] + 0.59 * bg[1] + 0.11 * bg[2] < 0.5) {
+        this.container.remove_style_class_name('light');
+      } else {
+        this.container.add_style_class_name('light');
+      }
     }
 
     // blurred backgrounds!
