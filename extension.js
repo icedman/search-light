@@ -121,6 +121,22 @@ class Extension {
       this
     );
 
+    Shell.AppSystem.get_default().connectObject(
+      'app-state-changed',
+      this._onAppStateChanged.bind(this),
+      this
+    );
+
+    global.display.connectObject(
+      'window-created',
+      (display, win) => {
+        if (this._visible) {
+          this.mainContainer.opacity = 0;
+        }
+      },
+      this
+    );
+
     log('enabled');
   }
 
@@ -229,6 +245,16 @@ class Extension {
     this._searchResults = this._search._searchResults;
     this._searchParent = this._search.get_parent();
 
+    if (!this._searchResults._activateDefault) {
+      this._searchResults._activateDefault =
+        this._searchResults.activateDefault;
+    }
+    this._searchResults.activateDefault = () => {
+      // hide window immediately when activated
+      this.mainContainer.opacity = 0;
+      this._searchResults._activateDefault();
+    };
+
     if (this._entry.get_parent()) {
       this._entry.get_parent().remove_child(this._entry);
     }
@@ -250,21 +276,10 @@ class Extension {
       }
     );
 
-    // this._windowCreatedId = global.display.connect('window-created', () => {
-    //   this._hiTimer.runOnce(() => {
-    //     this.hide();
-    //   }, 10);
-    // });
-
     this._search._text.get_parent().grab_key_focus();
   }
 
   _release_ui() {
-    if (this._windowCreatedId) {
-      global.display.disconnect(this._windowCreatedId);
-      this._windowCreatedId = null;
-    }
-
     if (this._entry) {
       this._entry.get_parent().remove_child(this._entry);
       this._entryParent.add_child(this._entry);
@@ -284,6 +299,12 @@ class Extension {
         this._search.__searchCancelled = null;
       }
       this._search = null;
+
+      if (this._searchResults._activateDefault) {
+        this._searchResults.activateDefault =
+          this._searchResults._activateDefault;
+        this._searchResults._activateDefault = null;
+      }
     }
 
     this.mainContainer.hide();
@@ -386,6 +407,7 @@ class Extension {
 
     this._add_events();
 
+    this.mainContainer.opacity = 255;
     this.mainContainer.show();
   }
 
@@ -455,9 +477,8 @@ class Extension {
       }
     }
 
-
     if (this.text_color && this.text_color[3] > 0) {
-        this.container.remove_style_class_name('light');
+      this.container.remove_style_class_name('light');
     } else {
       if (0.3 * bg[0] + 0.59 * bg[1] + 0.11 * bg[2] < 0.5) {
         this.container.remove_style_class_name('light');
@@ -524,6 +545,7 @@ class Extension {
     global.display.disconnectObject(this);
     global.stage.disconnectObject(this);
     Main.overview.disconnectObject(this);
+    Shell.AppSystem.get_default().disconnectObject(this);
   }
 
   _onOverviewShowing() {
@@ -532,6 +554,13 @@ class Extension {
 
   _onOverviewHidden() {
     this._inOverview = false;
+  }
+
+  _onAppStateChanged(st) {
+    this._lastAppState = st;
+    if (this._visible) {
+      this.mainContainer.opacity = 0;
+    }
   }
 
   _onFocusWindow(w, e) {}
@@ -543,6 +572,17 @@ class Extension {
       this._entry.contains(focus) || this._searchResults.contains(focus);
     if (!appearFocused) {
       this.hide();
+    }
+
+    // hide window immediately when activated
+    if (focus.activate) {
+      if (!focus._activate) {
+        focus._activate = focus.activate;
+        focus.activate = () => {
+          this.mainContainer.opacity = 0;
+          focus._activate();
+        };
+      }
     }
   }
 

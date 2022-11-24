@@ -9,6 +9,7 @@ const CustomStylesPath = Me.dir.get_child('./').get_path();
 var Style = class {
   constructor() {
     this.styles = {};
+    this.style_contents = {};
   }
 
   unloadAll() {
@@ -25,6 +26,16 @@ var Style = class {
     let ctx = St.ThemeContext.get_for_stage(global.stage);
     let theme = ctx.get_theme();
 
+    let content = '';
+    style_array.forEach((k) => {
+      content = `${content}\n${k}`;
+    });
+
+    if (this.style_contents[name] === content) {
+      log('skip regeneration');
+      return;
+    }
+
     if (fn) {
       theme.unload_stylesheet(fn);
     } else {
@@ -32,11 +43,7 @@ var Style = class {
       this.styles[name] = fn;
     }
 
-    let content = '';
-    style_array.forEach((k) => {
-      content = `${content}\n${k}`;
-    });
-
+    this.style_contents[name] = content;
     const [, etag] = fn.replace_contents(
       content,
       null,
@@ -46,5 +53,14 @@ var Style = class {
     );
 
     theme.load_stylesheet(fn);
+
+    log(content);
+  }
+
+  rgba(color) {
+    let clr = color || [1, 1, 1, 1];
+    let res = clr.map((r) => Math.floor(255 * r));
+    res[3] = clr[3].toFixed(1);
+    return res.join(',');
   }
 };
