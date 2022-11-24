@@ -324,8 +324,8 @@ class Extension {
     this.initial_height += font_size * 2 * this.scaleFactor;
 
     // position
-    let x = this.sw / 2 - this.width / 2;
-    let y = this.sh / 2 - this.height / 2;
+    let x = this.monitor.x + this.sw / 2 - this.width / 2;
+    let y = this.monitor.y + this.sh / 2 - this.height / 2;
     this._visible = true;
 
     this.container.set_size(this.width, this.initial_height);
