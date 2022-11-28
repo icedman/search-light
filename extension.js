@@ -285,7 +285,7 @@ class Extension {
     }
   }
 
-  _compute_size() {
+  _layout() {
     this._queryDisplay();
 
     // container size
@@ -325,6 +325,9 @@ class Extension {
 
     // background
     if (this._background) {
+      this._bgActor.set_position(-x, -y);
+      this._bgActor.set_size(this.monitor.width, this.monitor.height);
+      this._bgActor.get_parent().set_size(this.monitor.width, this.monitor.height);
       this._background.set_position(0, 0);
       this._background.set_size(this.monitor.width, this.monitor.height);
     }
@@ -351,10 +354,19 @@ class Extension {
       y: 0,
       width: 400,
       height: 400,
+    });
+    
+    let actor_container = new St.Widget({
+      name: 'searchLightBlurredBackgroundContainer',
+      x: 0,
+      y: 0,
+      width: 400,
+      height: 400,
       effect: this._blurEffect,
     });
 
-    background_parent.add_child(this._bgActor);
+    actor_container.add_child(this._bgActor);
+    background_parent.add_child(actor_container);
     this._bgActor.clip_to_allocation = true;
     this._bgActor.offscreen_redirect = Clutter.OffscreenRedirect.ALWAYS;
     background_parent.opacity = 255;
@@ -369,10 +381,10 @@ class Extension {
 
     this._acquire_ui();
     this._update_css();
-    this._compute_size();
+    this._layout();
 
     this._hiTimer.runOnce(() => {
-      this._compute_size();
+      this._layout();
     }, 10);
 
     this._add_events();

@@ -2,11 +2,6 @@
   /*border: 8px solid red;*/
 }
 
-#searchLightBlurredBackground {
-  /* this will hide the sharp corners of backgrounds */
-  border: 12px !important;
-}
-
 #searchLightBox {
   padding: 14px;
   border-radius: 16px;
