@@ -36,8 +36,7 @@ const _ = ExtensionUtils.gettext;
 
 var SearchLight = GObject.registerClass(
   {},
-  class SearchLight extends St.Widget 
-  {
+  class SearchLight extends St.Widget {
     _init() {
       super._init();
       this.name = 'dashContainer';
@@ -113,6 +112,12 @@ class Extension {
       this._onOverviewShowing.bind(this),
       'overview-hidden',
       this._onOverviewHidden.bind(this),
+      this
+    );
+
+    Main.sessionMode.connectObject(
+      'updated',
+      () => this.hide(),
       this
     );
 
@@ -327,7 +332,9 @@ class Extension {
     if (this._background) {
       this._bgActor.set_position(-x, -y);
       this._bgActor.set_size(this.monitor.width, this.monitor.height);
-      this._bgActor.get_parent().set_size(this.monitor.width, this.monitor.height);
+      this._bgActor
+        .get_parent()
+        .set_size(this.monitor.width, this.monitor.height);
       this._background.set_position(0, 0);
       this._background.set_size(this.monitor.width, this.monitor.height);
     }
@@ -355,7 +362,7 @@ class Extension {
       width: 400,
       height: 400,
     });
-    
+
     let actor_container = new St.Widget({
       name: 'searchLightBlurredBackgroundContainer',
       x: 0,
@@ -501,6 +508,7 @@ class Extension {
     global.display.disconnectObject(this);
     global.stage.disconnectObject(this);
     Main.overview.disconnectObject(this);
+    Main.sessionMode.disconnectObject(this);
   }
 
   _onOverviewShowing() {
