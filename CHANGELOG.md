@@ -1,3 +1,9 @@
+# release 6
+
+* add custom text color
+* fix scroll issue
+* fix fullscreen issue
+
 # release 5
 
 * add window borders

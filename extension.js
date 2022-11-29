@@ -31,6 +31,7 @@ const { schemaId, settingsKeys, SettingsKeys } = Me.imports.preferences.keys;
 
 const KeyboardShortcuts = Me.imports.keybinding.KeyboardShortcuts;
 const Timer = Me.imports.timer.Timer;
+const Style = Me.imports.style.Style;
 
 const _ = ExtensionUtils.gettext;
 
@@ -39,7 +40,7 @@ var SearchLight = GObject.registerClass(
   class SearchLight extends St.Widget {
     _init() {
       super._init();
-      this.name = 'dashContainer';
+      this.name = 'searchLight';
       this.offscreen_redirect = Clutter.OffscreenRedirect.ALWAYS;
       this.layout_manager = new Clutter.BinLayout();
     }
@@ -55,6 +56,7 @@ class Extension {
 
   enable() {
     Main._searchLight = this;
+    this._style = new Style();
 
     this._hiTimer = new Timer();
     this._hiTimer.warmup(15);
@@ -106,6 +108,7 @@ class Extension {
     this.accel.enable();
 
     this._updateShortcut();
+    this._updateCss();
 
     Main.overview.connectObject(
       'overview-showing',
@@ -115,9 +118,21 @@ class Extension {
       this
     );
 
-    Main.sessionMode.connectObject(
-      'updated',
-      () => this.hide(),
+    Main.sessionMode.connectObject('updated', () => this.hide(), this);
+
+    Shell.AppSystem.get_default().connectObject(
+      'app-state-changed',
+      this._onAppStateChanged.bind(this),
+      this
+    );
+
+    global.display.connectObject(
+      'window-created',
+      (display, win) => {
+        if (this._visible) {
+          this.mainContainer.opacity = 0;
+        }
+      },
       this
     );
 
@@ -125,6 +140,9 @@ class Extension {
   }
 
   disable() {
+    this._style.unloadAll();
+    this._style = null;
+
     SettingsKeys.disconnectSettings();
     this._settings = null;
 
@@ -141,6 +159,7 @@ class Extension {
       Main.layoutManager.removeChrome(this.mainContainer);
       this.mainContainer.destroy();
       this.mainContainer = null;
+      this._background = null;
     }
 
     this._hiTimer.stop();
@@ -222,8 +241,19 @@ class Extension {
     this._entry.add_style_class_name('slc');
 
     this._search = Main.uiGroup.find_child_by_name('searchController');
+    this._search.hide();
     this._searchResults = this._search._searchResults;
     this._searchParent = this._search.get_parent();
+
+    if (!this._searchResults._activateDefault) {
+      this._searchResults._activateDefault =
+        this._searchResults.activateDefault;
+    }
+    this._searchResults.activateDefault = () => {
+      // hide window immediately when activated
+      this.mainContainer.opacity = 0;
+      this._searchResults._activateDefault();
+    };
 
     if (this._entry.get_parent()) {
       this._entry.get_parent().remove_child(this._entry);
@@ -246,21 +276,10 @@ class Extension {
       }
     );
 
-    // this._windowCreatedId = global.display.connect('window-created', () => {
-    //   this._hiTimer.runOnce(() => {
-    //     this.hide();
-    //   }, 10);
-    // });
-
     this._search._text.get_parent().grab_key_focus();
   }
 
   _release_ui() {
-    if (this._windowCreatedId) {
-      global.display.disconnect(this._windowCreatedId);
-      this._windowCreatedId = null;
-    }
-
     if (this._entry) {
       this._entry.get_parent().remove_child(this._entry);
       this._entryParent.add_child(this._entry);
@@ -280,9 +299,13 @@ class Extension {
         this._search.__searchCancelled = null;
       }
       this._search = null;
-    }
 
-    this.mainContainer.hide();
+      if (this._searchResults._activateDefault) {
+        this._searchResults.activateDefault =
+          this._searchResults._activateDefault;
+        this._searchResults._activateDefault = null;
+      }
+    }
 
     if (Main.overview._toggle) {
       Main.overview.toggle = Main.overview._toggle;
@@ -310,18 +333,18 @@ class Extension {
 
     let padding = {
       14: 14 * 2.5,
-      16: 16 * 2.5,
-      18: 18 * 2.4,
-      20: 20 * 2.2,
-      22: 22 * 2,
-      24: 24 * 1.8,
+      16: 16 * 2.4,
+      18: 18 * 2.2,
+      20: 20 * 2.0,
+      22: 22 * 1.8,
+      24: 24 * 1.6,
     };
     this.initial_height = padding[font_size] * this.scaleFactor;
     this.initial_height += font_size * 2 * this.scaleFactor;
 
     // position
-    let x = this.sw / 2 - this.width / 2;
-    let y = this.sh / 2 - this.height / 2;
+    let x = this.monitor.x + this.sw / 2 - this.width / 2;
+    let y = this.monitor.y + this.sh / 2 - this.height / 2;
     this._visible = true;
 
     this.container.set_size(this.width, this.initial_height);
@@ -341,6 +364,8 @@ class Extension {
   }
 
   _setupBackground() {
+    // todo... needs clarity
+
     if (this._background && this._background.get_parent()) {
       this._background.get_parent().remove_child(this._background);
     }
@@ -387,7 +412,7 @@ class Extension {
     if (Main.overview.visible) return;
 
     this._acquire_ui();
-    this._update_css();
+    this._updateCss();
     this._layout();
 
     this._hiTimer.runOnce(() => {
@@ -396,79 +421,28 @@ class Extension {
 
     this._add_events();
 
+    this.mainContainer.opacity = 255;
     this.mainContainer.show();
+    this.container.show();
   }
 
   hide() {
     this._visible = false;
-    this.mainContainer.hide();
     this._release_ui();
     this._remove_events();
+    this.mainContainer.hide();
   }
 
-  _update_css(disable) {
+  _updateCss(disable) {
     let bg = this.background_color || [0, 0, 0, 0.5];
-    let clr = bg.map((r) => Math.floor(255 * r));
-    clr[3] = bg[3];
-    let style = `background: rgba(${clr.join(',')});`;
-
-    let border_style = '';
-    if (this.border_thickness) {
-      let bg = this.border_color || [1, 1, 1, 1];
-      let clr = bg.map((r) => Math.floor(255 * r));
-      clr[3] = bg[3];
-      border_style = `border: ${this.border_thickness}px solid rgba(${clr.join(
-        ','
-      )});`;
-    }
-
-    this.container.style = `${style}${border_style}`;
-
-    if (this.border_radius !== null) {
-      let r = -1;
-      if (!disable) {
-        r = Math.floor(this.border_radius);
-        this.container.add_style_class_name(`border-radius-${r}`);
-      }
-      for (let i = 0; i < 8; i++) {
-        if (i != r) {
-          this.container.remove_style_class_name(`border-radius-${i}`);
-        }
-      }
-    }
-
-    if (this.font_size !== null) {
-      let r = -1;
-      if (!disable) {
-        r = this.font_size_options[this.font_size];
-        this.container.add_style_class_name(`font-${r}`);
-      }
-      for (let i = 0; i < 8; i++) {
-        let ii = this.font_size_options[i];
-        if (ii != r) {
-          this.container.remove_style_class_name(`font-${ii}`);
-        }
-      }
-    }
-
-    if (this.entry_font_size !== null) {
-      let r = -1;
-      if (!disable) {
-        r = this.entry_font_size_options[this.entry_font_size];
-        this._entry.add_style_class_name(`entry-font-${r}`);
-      }
-      for (let i = 0; i < 8; i++) {
-        let ii = this.entry_font_size_options[i];
-        if (ii != r) {
-          this._entry.remove_style_class_name(`entry-font-${ii}`);
-        }
-      }
-    }
-
-    if (0.3 * bg[0] + 0.59 * bg[1] + 0.11 * bg[2] < 0.5) {
+    if (this.text_color && this.text_color[3] > 0) {
       this.container.remove_style_class_name('light');
     } else {
-      this.container.add_style_class_name('light');
+      if (0.3 * bg[0] + 0.59 * bg[1] + 0.11 * bg[2] < 0.5) {
+        this.container.remove_style_class_name('light');
+      } else {
+        this.container.add_style_class_name('light');
+      }
     }
 
     // blurred backgrounds!
@@ -476,6 +450,58 @@ class Extension {
     this._background.opacity = 255; //Math.floor(this.background_color[3] * 255);
     this._blurEffect.brightness = this.blur_brightness;
     this._blurEffect.sigma = this.blur_sigma;
+
+    let styles = [];
+    {
+      let ss = [];
+
+      {
+        let clr = this._style.rgba(this.background_color);
+        ss.push(`\n  background: rgba(${clr});`);
+      }
+
+      if (this.border_thickness) {
+        let clr = this._style.rgba(this.border_color);
+        ss.push(`\n  border: ${this.border_thickness}px solid rgba(${clr});`);
+      }
+      styles.push(`#searchLight {${ss.join(' ')}}`);
+    }
+
+    {
+      if (this.border_radius !== null) {
+        let rads = [0, 16, 18, 20, 22, 24, 28, 32];
+        let r = rads[Math.floor(this.border_radius)];
+        if (r) {
+          styles.push(
+            `#searchLight, #searchLightBox, #searchLightBlurredBackground,\nStBoxLayout.search-section-content { border-radius: ${r}px !important; }`
+          );
+        }
+      }
+    }
+
+    if (this.font_size !== null) {
+      let f = this.font_size_options[this.font_size];
+      if (f) {
+        styles.push(`#searchLightBox * { font-size: ${f}pt !important; }`);
+      }
+
+      f = this.entry_font_size_options[this.entry_font_size];
+      if (f) {
+        styles.push(
+          `#searchLightBox > StEntry, #searchLightBox > StEntry:focus { font-size: ${f}pt !important; }`
+        );
+      }
+    }
+
+    let clr = this._style.rgba(this.text_color);
+    if ((this.text_color || [1, 1, 1, 1])[3] > 0) {
+      styles.push(`#searchLightBox * { color: rgba(${clr}) !important }`);
+    } else {
+      styles.push('/* empty */');
+    }
+
+    // log(styles);
+    this._style.build('custom', styles);
   }
 
   _toggle_search_light() {
@@ -483,6 +509,8 @@ class Extension {
     if (!this._visible) {
       this.show();
       global.stage.set_key_focus(this._entry);
+    } else {
+      global.stage.set_key_focus(null);
     }
   }
 
@@ -509,6 +537,7 @@ class Extension {
     global.stage.disconnectObject(this);
     Main.overview.disconnectObject(this);
     Main.sessionMode.disconnectObject(this);
+    Shell.AppSystem.get_default().disconnectObject(this);
   }
 
   _onOverviewShowing() {
@@ -517,6 +546,13 @@ class Extension {
 
   _onOverviewHidden() {
     this._inOverview = false;
+  }
+
+  _onAppStateChanged(st) {
+    this._lastAppState = st;
+    if (this._visible) {
+      this.mainContainer.opacity = 0;
+    }
   }
 
   _onFocusWindow(w, e) {}
@@ -528,6 +564,17 @@ class Extension {
       this._entry.contains(focus) || this._searchResults.contains(focus);
     if (!appearFocused) {
       this.hide();
+    }
+
+    // hide window immediately when activated
+    if (focus.activate) {
+      if (!focus._activate) {
+        focus._activate = focus.activate;
+        focus.activate = () => {
+          this.mainContainer.opacity = 0;
+          focus._activate();
+        };
+      }
     }
   }
 
