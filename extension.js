@@ -32,6 +32,8 @@ const { schemaId, settingsKeys, SettingsKeys } = Me.imports.preferences.keys;
 const KeyboardShortcuts = Me.imports.keybinding.KeyboardShortcuts;
 const Timer = Me.imports.timer.Timer;
 const Style = Me.imports.style.Style;
+const Chamfer = Me.imports.chamfer.Chamfer;
+const ShapeEffect = Me.imports.effects.color_effect.ShapeEffect;
 
 const _ = ExtensionUtils.gettext;
 
@@ -68,8 +70,9 @@ class Extension {
       let n = name.replace(/-/g, '_');
       this[n] = value;
       switch (name) {
-        case 'text-color':
-          this._updateCustomColor();
+        case 'blur-background':
+        case 'border-radius':
+          this._setupCorners();
           break;
         case 'shortcut-search':
           this._updateShortcut();
@@ -111,7 +114,7 @@ class Extension {
     this.accel.enable();
 
     this._updateShortcut();
-    this._updateCustomColor();
+    this._updateCss();
 
     Main.overview.connectObject(
       'overview-showing',
@@ -120,6 +123,8 @@ class Extension {
       this._onOverviewHidden.bind(this),
       this
     );
+
+    Main.sessionMode.connectObject('updated', () => this.hide(), this);
 
     Shell.AppSystem.get_default().connectObject(
       'app-state-changed',
@@ -161,6 +166,8 @@ class Extension {
       this.mainContainer.destroy();
       this.mainContainer = null;
       this._background = null;
+      this._corners = null;
+      this._edges = null;
     }
 
     this._hiTimer.stop();
@@ -242,6 +249,7 @@ class Extension {
     this._entry.add_style_class_name('slc');
 
     this._search = Main.uiGroup.find_child_by_name('searchController');
+    this._search.hide();
     this._searchResults = this._search._searchResults;
     this._searchParent = this._search.get_parent();
 
@@ -272,6 +280,10 @@ class Extension {
       () => {
         this.container.set_size(this.width, this.height);
         this.mainContainer.set_size(this.width, this.height);
+        if (this._corners) {
+          this._corners[2].y = this.height - this._corners[1].height;
+          this._corners[3].y = this.height - this._corners[1].height;
+        }
         this._search.show();
       }
     );
@@ -307,15 +319,13 @@ class Extension {
       }
     }
 
-    this.mainContainer.hide();
-
     if (Main.overview._toggle) {
       Main.overview.toggle = Main.overview._toggle;
       Main.overview._toggle = null;
     }
   }
 
-  _compute_size() {
+  _layout() {
     this._queryDisplay();
 
     // container size
@@ -355,12 +365,98 @@ class Extension {
 
     // background
     if (this._background) {
+      this._bgActor.set_position(-x, -y);
+      this._bgActor.set_size(this.monitor.width, this.monitor.height);
+      this._bgActor
+        .get_parent()
+        .set_size(this.monitor.width, this.monitor.height);
       this._background.set_position(0, 0);
       this._background.set_size(this.monitor.width, this.monitor.height);
     }
+
+    // draw magenta on edges and rounded corners
+    if (!this._corners) {
+      this._setupCorners();
+    }
+    if (this._corners && this._edges) {
+      this._corners[0].x = 0;
+      this._corners[0].y = 0;
+      this._corners[1].x = this.width - this._corners[1].width;
+      this._corners[1].y = 0;
+      this._corners[2].x = this.width - this._corners[1].width;
+      this._corners[2].y = this.initial_height - this._corners[1].height;
+      this._corners[3].x = 0;
+      this._corners[3].y = this.initial_height - this._corners[1].height;
+      this._edges[0].x = 0;
+      this._edges[0].y = 0;
+      this._edges[0].width = this.width;
+      this._edges[0].height = 2;
+      this._edges[1].x = 0;
+      this._edges[1].y = 0;
+      this._edges[1].width = 2;
+      this._edges[1].height = this.height;
+      this._edges[2].x = this.width - 1;
+      this._edges[2].y = 0;
+      this._edges[2].width = 2;
+      this._edges[2].height = this.height;
+    }
+  }
+
+  _setupCorners() {
+    if (this._corners) {
+      this._corners.forEach((c) => {
+        if (c.get_parent()) {
+          c.get_parent().remove_child(c);
+        }
+      });
+    }
+    if (this._edges) {
+      this._edges.forEach((c) => {
+        if (c.get_parent()) {
+          c.get_parent().remove_child(c);
+        }
+      });
+    }
+
+    if (!this.blur_background) {
+      return;
+    }
+
+    let rads = [2, 16, 18, 20, 22, 24, 28, 32];
+    let r = rads[Math.floor(this.border_radius)] + 4;
+
+    this._corners = [];
+    for (let i = 0; i < 4; i++) {
+      this._corners.push(new Chamfer({ size: r, position: i }));
+      this._background.add_child(this._corners[i]);
+      this._corners[i].pixel = [
+        1 / this._background.width,
+        1 / this._background.height,
+      ];
+    }
+    this._edges = [];
+    this._edges.push(new St.Widget());
+    this._edges.push(new St.Widget());
+    this._edges.push(new St.Widget());
+    this._edges.forEach((e) => {
+      e.style = 'background: rgba(255,0,255,1)';
+      e.reactive = false;
+      this._background.add_child(e);
+    });
   }
 
   _setupBackground() {
+    // todo... needs clarity
+
+    /*
+    SearchLight (#searchLight)
+      -> container (#searchLightBox)
+      -> background (#searchLightBlurredBackground)
+          -> actor_container (#searchLightBlurredBackgroundContainer)
+              -> bgActor
+          -> corners
+    */
+
     if (this._background && this._background.get_parent()) {
       this._background.get_parent().remove_child(this._background);
     }
@@ -379,18 +475,28 @@ class Extension {
       layout_manager: new Clutter.BinLayout(),
       x: 0,
       y: 0,
-      width: 400,
-      height: 400,
+      width: 20,
+      height: 20,
+      effect: new ShapeEffect(),
+    });
+
+    let actor_container = new St.Widget({
+      name: 'searchLightBlurredBackgroundContainer',
+      x: 0,
+      y: 0,
+      width: 20,
+      height: 20,
       effect: this._blurEffect,
     });
 
-    background_parent.add_child(this._bgActor);
+    actor_container.add_child(this._bgActor);
+    background_parent.add_child(actor_container);
     this._bgActor.clip_to_allocation = true;
     this._bgActor.offscreen_redirect = Clutter.OffscreenRedirect.ALWAYS;
-    background_parent.opacity = 255;
 
     this.mainContainer.insert_child_below(background_parent, this.container);
     this._background = background_parent;
+    this._background.opacity = 0;
     this._background.visible = false;
   }
 
@@ -398,85 +504,33 @@ class Extension {
     if (Main.overview.visible) return;
 
     this._acquire_ui();
-    this._update_css();
-    this._compute_size();
 
-    this._hiTimer.runOnce(() => {
-      this._compute_size();
-    }, 10);
+    let background = Main.layoutManager._backgroundGroup.get_child_at_index(0);
+    this._bgActor.set_content(background.get_content());
+
+    this._updateCss();
+    this._layout();
+
+    // this._hiTimer.runOnce(() => {
+    //   this._layout();
+    // }, 10);
 
     this._add_events();
 
     this.mainContainer.opacity = 255;
     this.mainContainer.show();
+    this.container.show();
   }
 
   hide() {
     this._visible = false;
-    this.mainContainer.hide();
     this._release_ui();
     this._remove_events();
+    this.mainContainer.hide();
   }
 
-  _update_css(disable) {
+  _updateCss(disable) {
     let bg = this.background_color || [0, 0, 0, 0.5];
-    let clr = bg.map((r) => Math.floor(255 * r));
-    clr[3] = bg[3];
-    let style = `background: rgba(${clr.join(',')});`;
-
-    let border_style = '';
-    if (this.border_thickness) {
-      let bg = this.border_color || [1, 1, 1, 1];
-      let clr = bg.map((r) => Math.floor(255 * r));
-      clr[3] = bg[3];
-      border_style = `border: ${this.border_thickness}px solid rgba(${clr.join(
-        ','
-      )});`;
-    }
-
-    this.container.style = `${style}${border_style}`;
-
-    if (this.border_radius !== null) {
-      let r = -1;
-      if (!disable) {
-        r = Math.floor(this.border_radius);
-        this.container.add_style_class_name(`border-radius-${r}`);
-      }
-      for (let i = 0; i < 8; i++) {
-        if (i != r) {
-          this.container.remove_style_class_name(`border-radius-${i}`);
-        }
-      }
-    }
-
-    if (this.font_size !== null) {
-      let r = -1;
-      if (!disable) {
-        r = this.font_size_options[this.font_size];
-        this.container.add_style_class_name(`font-${r}`);
-      }
-      for (let i = 0; i < 8; i++) {
-        let ii = this.font_size_options[i];
-        if (ii != r) {
-          this.container.remove_style_class_name(`font-${ii}`);
-        }
-      }
-    }
-
-    if (this.entry_font_size !== null) {
-      let r = -1;
-      if (!disable) {
-        r = this.entry_font_size_options[this.entry_font_size];
-        this._entry.add_style_class_name(`entry-font-${r}`);
-      }
-      for (let i = 0; i < 8; i++) {
-        let ii = this.entry_font_size_options[i];
-        if (ii != r) {
-          this._entry.remove_style_class_name(`entry-font-${ii}`);
-        }
-      }
-    }
-
     if (this.text_color && this.text_color[3] > 0) {
       this.container.remove_style_class_name('light');
     } else {
@@ -489,9 +543,67 @@ class Extension {
 
     // blurred backgrounds!
     this._background.visible = this.blur_background;
-    this._background.opacity = 255; //Math.floor(this.background_color[3] * 255);
+    this._background.opacity = 255;
     this._blurEffect.brightness = this.blur_brightness;
     this._blurEffect.sigma = this.blur_sigma;
+
+    let styles = [];
+    {
+      let ss = [];
+
+      {
+        let clr = this._style.rgba(this.background_color);
+        ss.push(`\n  background: rgba(${clr});`);
+      }
+
+      if (
+        this.border_thickness
+        // && !this.blur_background
+      ) {
+        let clr = this._style.rgba(this.border_color);
+        ss.push(`\n  border: ${this.border_thickness}px solid rgba(${clr});`);
+      }
+      styles.push(`#searchLight {${ss.join(' ')}}`);
+    }
+
+    {
+      if (this.border_radius !== null) {
+        let rads = [0, 16, 18, 20, 22, 24, 28, 32];
+        let r = rads[Math.floor(this.border_radius)];
+        if (r) {
+          let st = `StBoxLayout.search-section-content { border-radius: ${r}px !important; }`;
+          st = '#searchLightBlurredBackgroundContainer,\n' + st;
+          st = '#searchLightBlurredBackground,\n' + st;
+          st = '#searchLightBox,\n' + st;
+          st = '#searchLight,\n' + st;
+          styles.push(st);
+        }
+      }
+    }
+
+    if (this.font_size !== null) {
+      let f = this.font_size_options[this.font_size];
+      if (f) {
+        styles.push(`#searchLightBox * { font-size: ${f}pt !important; }`);
+      }
+
+      f = this.entry_font_size_options[this.entry_font_size];
+      if (f) {
+        styles.push(
+          `#searchLightBox > StEntry, #searchLightBox > StEntry:focus { font-size: ${f}pt !important; }`
+        );
+      }
+    }
+
+    let clr = this._style.rgba(this.text_color);
+    if ((this.text_color || [1, 1, 1, 1])[3] > 0) {
+      styles.push(`#searchLightBox * { color: rgba(${clr}) !important }`);
+    } else {
+      styles.push('/* empty */');
+    }
+
+    // log(styles);
+    this._style.build('custom', styles);
   }
 
   _updateCustomColor(disable) {
@@ -520,6 +632,8 @@ class Extension {
     if (!this._visible) {
       this.show();
       global.stage.set_key_focus(this._entry);
+    } else {
+      global.stage.set_key_focus(null);
     }
   }
 
@@ -545,6 +659,7 @@ class Extension {
     global.display.disconnectObject(this);
     global.stage.disconnectObject(this);
     Main.overview.disconnectObject(this);
+    Main.sessionMode.disconnectObject(this);
     Shell.AppSystem.get_default().disconnectObject(this);
   }
 
