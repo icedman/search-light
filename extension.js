@@ -32,6 +32,8 @@ const { schemaId, settingsKeys, SettingsKeys } = Me.imports.preferences.keys;
 const KeyboardShortcuts = Me.imports.keybinding.KeyboardShortcuts;
 const Timer = Me.imports.timer.Timer;
 const Style = Me.imports.style.Style;
+const Chamfer = Me.imports.chamfer.Chamfer;
+const ShapeEffect = Me.imports.effects.color_effect.ShapeEffect;
 
 const _ = ExtensionUtils.gettext;
 
@@ -68,6 +70,10 @@ class Extension {
       let n = name.replace(/-/g, '_');
       this[n] = value;
       switch (name) {
+        case 'blur-background':
+        case 'border-radius':
+          this._setupCorners();
+          break;
         case 'shortcut-search':
           this._updateShortcut();
           break;
@@ -160,6 +166,8 @@ class Extension {
       this.mainContainer.destroy();
       this.mainContainer = null;
       this._background = null;
+      this._corners = null;
+      this._edges = null;
     }
 
     this._hiTimer.stop();
@@ -272,10 +280,13 @@ class Extension {
       () => {
         this.container.set_size(this.width, this.height);
         this.mainContainer.set_size(this.width, this.height);
+        if (this._corners) {
+          this._corners[2].y = this.height - this._corners[1].height;
+          this._corners[3].y = this.height - this._corners[1].height;
+        }
         this._search.show();
       }
     );
-
     this._search._text.get_parent().grab_key_focus();
   }
 
@@ -361,10 +372,89 @@ class Extension {
       this._background.set_position(0, 0);
       this._background.set_size(this.monitor.width, this.monitor.height);
     }
+
+    // draw magenta on edges and rounded corners
+    if (!this._corners) {
+      this._setupCorners();
+    }
+    if (this._corners && this._edges) {
+      this._corners[0].x = 0;
+      this._corners[0].y = 0;
+      this._corners[1].x = this.width - this._corners[1].width;
+      this._corners[1].y = 0;
+      this._corners[2].x = this.width - this._corners[1].width;
+      this._corners[2].y = this.initial_height - this._corners[1].height;
+      this._corners[3].x = 0;
+      this._corners[3].y = this.initial_height - this._corners[1].height;
+      this._edges[0].x = 0;
+      this._edges[0].y = 0;
+      this._edges[0].width = this.width;
+      this._edges[0].height = 2;
+      this._edges[1].x = 0;
+      this._edges[1].y = 0;
+      this._edges[1].width = 2;
+      this._edges[1].height = this.height;
+      this._edges[2].x = this.width - 1;
+      this._edges[2].y = 0;
+      this._edges[2].width = 2;
+      this._edges[2].height = this.height;
+    }
+  }
+
+  _setupCorners() {
+    if (this._corners) {
+      this._corners.forEach((c) => {
+        if (c.get_parent()) {
+          c.get_parent().remove_child(c);
+        }
+      });
+    }
+    if (this._edges) {
+      this._edges.forEach((c) => {
+        if (c.get_parent()) {
+          c.get_parent().remove_child(c);
+        }
+      });
+    }
+
+    if (!this.blur_background) {
+      return;
+    }
+
+    let rads = [2, 16, 18, 20, 22, 24, 28, 32];
+    let r = rads[Math.floor(this.border_radius)] + 4;
+
+    this._corners = [];
+    for (let i = 0; i < 4; i++) {
+      this._corners.push(new Chamfer({ size: r, position: i }));
+      this._background.add_child(this._corners[i]);
+      this._corners[i].pixel = [
+        1 / this._background.width,
+        1 / this._background.height,
+      ];
+    }
+    this._edges = [];
+    this._edges.push(new St.Widget());
+    this._edges.push(new St.Widget());
+    this._edges.push(new St.Widget());
+    this._edges.forEach((e) => {
+      e.style = 'background: rgba(255,0,255,1)';
+      e.reactive = false;
+      this._background.add_child(e);
+    });
   }
 
   _setupBackground() {
     // todo... needs clarity
+
+    /*
+    SearchLight (#searchLight)
+      -> container (#searchLightBox)
+      -> background (#searchLightBlurredBackground)
+          -> actor_container (#searchLightBlurredBackgroundContainer)
+              -> bgActor
+          -> corners
+    */
 
     if (this._background && this._background.get_parent()) {
       this._background.get_parent().remove_child(this._background);
@@ -384,16 +474,17 @@ class Extension {
       layout_manager: new Clutter.BinLayout(),
       x: 0,
       y: 0,
-      width: 400,
-      height: 400,
+      width: 20,
+      height: 20,
+      effect: new ShapeEffect(),
     });
 
     let actor_container = new St.Widget({
       name: 'searchLightBlurredBackgroundContainer',
       x: 0,
       y: 0,
-      width: 400,
-      height: 400,
+      width: 20,
+      height: 20,
       effect: this._blurEffect,
     });
 
@@ -401,10 +492,10 @@ class Extension {
     background_parent.add_child(actor_container);
     this._bgActor.clip_to_allocation = true;
     this._bgActor.offscreen_redirect = Clutter.OffscreenRedirect.ALWAYS;
-    background_parent.opacity = 255;
 
     this.mainContainer.insert_child_below(background_parent, this.container);
     this._background = background_parent;
+    this._background.opacity = 0;
     this._background.visible = false;
   }
 
@@ -412,12 +503,16 @@ class Extension {
     if (Main.overview.visible) return;
 
     this._acquire_ui();
+
+    let background = Main.layoutManager._backgroundGroup.get_child_at_index(0);
+    this._bgActor.set_content(background.get_content());
+
     this._updateCss();
     this._layout();
 
-    this._hiTimer.runOnce(() => {
-      this._layout();
-    }, 10);
+    // this._hiTimer.runOnce(() => {
+    //   this._layout();
+    // }, 10);
 
     this._add_events();
 
@@ -447,7 +542,7 @@ class Extension {
 
     // blurred backgrounds!
     this._background.visible = this.blur_background;
-    this._background.opacity = 255; //Math.floor(this.background_color[3] * 255);
+    this._background.opacity = 255;
     this._blurEffect.brightness = this.blur_brightness;
     this._blurEffect.sigma = this.blur_sigma;
 
@@ -460,7 +555,10 @@ class Extension {
         ss.push(`\n  background: rgba(${clr});`);
       }
 
-      if (this.border_thickness) {
+      if (
+        this.border_thickness
+        // && !this.blur_background
+      ) {
         let clr = this._style.rgba(this.border_color);
         ss.push(`\n  border: ${this.border_thickness}px solid rgba(${clr});`);
       }
@@ -472,9 +570,12 @@ class Extension {
         let rads = [0, 16, 18, 20, 22, 24, 28, 32];
         let r = rads[Math.floor(this.border_radius)];
         if (r) {
-          styles.push(
-            `#searchLight, #searchLightBox, #searchLightBlurredBackground,\nStBoxLayout.search-section-content { border-radius: ${r}px !important; }`
-          );
+          let st = `StBoxLayout.search-section-content { border-radius: ${r}px !important; }`;
+          st = '#searchLightBlurredBackgroundContainer,\n' + st;
+          st = '#searchLightBlurredBackground,\n' + st;
+          st = '#searchLightBox,\n' + st;
+          st = '#searchLight,\n' + st;
+          styles.push(st);
         }
       }
     }
