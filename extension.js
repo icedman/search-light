@@ -283,6 +283,7 @@ class Extension {
         if (this._corners) {
           this._corners[2].y = this.height - this._corners[1].height;
           this._corners[3].y = this.height - this._corners[1].height;
+          this._edges[3].y = this.height - 2;
         }
         this._search.show();
       }
@@ -399,6 +400,10 @@ class Extension {
       this._edges[2].y = 0;
       this._edges[2].width = 2;
       this._edges[2].height = this.height;
+      this._edges[3].x = 0;
+      this._edges[3].y = this.initial_height - 2;
+      this._edges[3].width = this.width;
+      this._edges[3].height = 2;
     }
   }
 
@@ -435,6 +440,7 @@ class Extension {
       ];
     }
     this._edges = [];
+    this._edges.push(new St.Widget());
     this._edges.push(new St.Widget());
     this._edges.push(new St.Widget());
     this._edges.push(new St.Widget());
