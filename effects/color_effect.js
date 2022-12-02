@@ -37,7 +37,9 @@ var ShapeEffect = GObject.registerClass(
     _init(params) {
       super._init(params);
 
+      this._color = undefined;
       this._pixel = undefined;
+      this._colorLocation = this.get_uniform_location('color');
       this._pixelLocation = this.get_uniform_location('pixel_step');
 
       this.set_uniform_float(this._texLocation, 1, [0]);
@@ -60,6 +62,16 @@ var ShapeEffect = GObject.registerClass(
       if (this._pixel === v) return;
       this._pixel = v;
       this.set_uniform_float(this._pixelLocation, 2, this._pixel);
+    }
+
+    get color() {
+      return this._color;
+    }
+
+    set color(v) {
+      if (this._color === v) return;
+      this._color = v;
+      this.set_uniform_float(this._colorLocation, 4, this._color);
     }
   }
 );

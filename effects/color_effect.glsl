@@ -1,5 +1,6 @@
 uniform sampler2D tex;
 
+uniform vec4 color;
 uniform vec2 pixel_step;
 
 void main() {
@@ -27,6 +28,9 @@ void main() {
         } 
       }
     }
+
+    vec3 clr = vec3(color[0] * color[3], color[1] * color[3], color[2] * color[3]);
+    cc = vec4(mix(cc.rgb, clr, color[3]), cc.a);
 
     cogl_color_out = cc;
 }

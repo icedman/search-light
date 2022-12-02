@@ -470,6 +470,7 @@ class Extension {
       sigma: this.blur_sigma,
       mode: Shell.BlurMode.ACTOR,
     });
+    this._shapeEffect = new ShapeEffect();
     let background_parent = new St.Widget({
       name: 'searchLightBlurredBackground',
       layout_manager: new Clutter.BinLayout(),
@@ -477,7 +478,7 @@ class Extension {
       y: 0,
       width: 20,
       height: 20,
-      effect: new ShapeEffect(),
+      effect: this._shapeEffect,
     });
 
     let actor_container = new St.Widget({
@@ -546,6 +547,7 @@ class Extension {
     this._background.opacity = 255;
     this._blurEffect.brightness = this.blur_brightness;
     this._blurEffect.sigma = this.blur_sigma;
+    this._shapeEffect.color = this.background_color;
 
     let styles = [];
     {
