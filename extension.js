@@ -428,7 +428,7 @@ class Extension {
     }
 
     let rads = [2, 16, 18, 20, 22, 24, 28, 32];
-    let r = rads[Math.floor(this.border_radius)] + 4;
+    let r = rads[Math.floor(this.border_radius)];
 
     this._corners = [];
     for (let i = 0; i < 4; i++) {
