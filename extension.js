@@ -458,7 +458,8 @@ class Extension {
     SearchLight (#searchLight)
       -> container (#searchLightBox)
       -> background (#searchLightBlurredBackground)
-          -> actor_container (#searchLightBlurredBackgroundContainer)
+          -> blurEffect
+          -> image (#searchLightBlurredBackgroundImage)
               -> bgActor
           -> corners
     */
@@ -487,8 +488,8 @@ class Extension {
       effect: this._shapeEffect,
     });
 
-    let actor_container = new St.Widget({
-      name: 'searchLightBlurredBackgroundContainer',
+    let image = new St.Widget({
+      name: 'searchLightBlurredBackgroundImage',
       x: 0,
       y: 0,
       width: 20,
@@ -496,8 +497,8 @@ class Extension {
       effect: this._blurEffect,
     });
 
-    actor_container.add_child(this._bgActor);
-    background_parent.add_child(actor_container);
+    image.add_child(this._bgActor);
+    background_parent.add_child(image);
     this._bgActor.clip_to_allocation = true;
     this._bgActor.offscreen_redirect = Clutter.OffscreenRedirect.ALWAYS;
 
@@ -581,8 +582,8 @@ class Extension {
         let r = rads[Math.floor(this.border_radius)];
         if (r) {
           let st = `StBoxLayout.search-section-content { border-radius: ${r}px !important; }`;
-          st = '#searchLightBlurredBackgroundContainer,\n' + st;
-          st = '#searchLightBlurredBackground,\n' + st;
+          st = '#searchLightBlurredBackgroundImage,\n' + st; // has no effect
+          st = '#searchLightBlurredBackground,\n' + st;  // has no effect
           st = '#searchLightBox,\n' + st;
           st = '#searchLight,\n' + st;
           styles.push(st);
@@ -615,27 +616,6 @@ class Extension {
     this._style.build('custom', styles);
   }
 
-  _updateCustomColor(disable) {
-    if (disable) {
-      return;
-    }
-
-    let bg = this.text_color || [0, 0, 0, 0];
-    let clr = bg.map((r) => Math.floor(255 * r));
-    clr[3] = bg[3];
-
-    let styles = [];
-    if (bg[3] > 0) {
-      styles.push(
-        `#searchLightBox * { color: rgba(${clr.join(',')}) !important }`
-      );
-    } else {
-      styles.push('/* empty */');
-    }
-
-    log(styles);
-    this._style.build('custom', styles);
-  }
   _toggle_search_light() {
     if (this._inOverview) return;
     if (!this._visible) {
