@@ -18,6 +18,7 @@ publish:
 	cp stylesheet.css ./build
 	cp -r ui ./build
 	cp -r preferences ./build
+	cp -r effects ./build
 	cp README.md ./build
 	cp CHANGELOG.md ./build
 	cp -R schemas ./build
