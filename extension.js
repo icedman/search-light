@@ -366,7 +366,7 @@ class Extension {
 
     // background
     if (this._background) {
-      this._bgActor.set_position(this.monitor.x-x, this.monitor.y-y);
+      this._bgActor.set_position(this.monitor.x - x, this.monitor.y - y);
       this._bgActor.set_size(this.monitor.width, this.monitor.height);
       this._bgActor
         .get_parent()
@@ -583,7 +583,7 @@ class Extension {
         if (r) {
           let st = `StBoxLayout.search-section-content { border-radius: ${r}px !important; }`;
           st = '#searchLightBlurredBackgroundImage,\n' + st; // has no effect
-          st = '#searchLightBlurredBackground,\n' + st;  // has no effect
+          st = '#searchLightBlurredBackground,\n' + st; // has no effect
           st = '#searchLightBox,\n' + st;
           st = '#searchLight,\n' + st;
           styles.push(st);
@@ -694,6 +694,10 @@ class Extension {
     if (!this._entry) return;
     let focus = global.stage.get_key_focus();
     if (!this._entry.contains(focus)) {
+      if (evt.get_key_symbol() === Clutter.KEY_Escape) {
+        this.hide();
+        return Clutter.EVENT_STOP;
+      }
       this._search._text.get_parent().grab_key_focus();
     }
     return Clutter.EVENT_STOP;
