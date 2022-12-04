@@ -2,20 +2,14 @@
   /*border: 8px solid red;*/
 }
 
-#searchLightBlurredBackground {
-  /* this will hide the sharp corners of backgrounds */
-  border: 12px !important;
-}
-
 #searchLightBox {
-  padding: 14px;
-  border-radius: 16px;
+  /*padding: 14px;*/
   border: 0px;
   box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
 }
 
 #searchLightBox * {
-  /*font-size: 14pt !important;*/
+  color:  white;
 }
 
 #searchLightBox.light * {
@@ -24,6 +18,7 @@
 
 #searchLightBox > StEntry:focus,
 #searchLightBox > StEntry {
+  padding: 18px!important;
 	margin-top: 0px !important;
   margin-bottom: 20px !important;
 	border-radius: 8px;
@@ -31,43 +26,6 @@
   border-width: 0px !important;
   background: rgba(0,0,0,0);
   /*font-size: 14pt !important;*/
-}
-
-
-#searchLightBox.font-16 * {
-  font-size: 16pt !important;
-}
-#searchLightBox > StEntry.entry-font-16:focus,
-#searchLightBox > StEntry.entry-font-16 {
-  font-size: 16pt !important;
-}
-#searchLightBox.font-18 * {
-  font-size: 18pt !important;
-}
-#searchLightBox > StEntry.entry-font-18:focus,
-#searchLightBox > StEntry.entry-font-18 {
-  font-size: 18pt !important;
-}
-#searchLightBox.font-20 * {
-  font-size: 20pt !important;
-}
-#searchLightBox > StEntry.entry-font-20:focus,
-#searchLightBox > StEntry.entry-font-20 {
-  font-size: 20pt !important;
-}
-#searchLightBox.font-22 * {
-  font-size: 22pt !important;
-}
-#searchLightBox> StEntry.entry-font-22:focus,
-#searchLightBox> StEntry.entry-font-22 {
-  font-size: 22pt !important;
-}
-#searchLightBox.font-24 * {
-  font-size: 24pt !important;
-}
-#searchLightBox > StEntry.entry-font-24:focus,
-#searchLightBox > StEntry.entry-font-24 {
-  font-size: 24pt !important;
 }
 
 #searchLightBox .app-well-app {
@@ -84,58 +42,7 @@
   background: rgba(100,100,100,0.20) !important;
 }
 
-#searchLight.border-radius-0 #searchLightBlurredBackground,
-#searchLight.border-radius-0 StBoxLayout.search-section-content,
-#searchLight.border-radius-0,
-#searchLightBox.border-radius-0 {
-  border-radius: 0px !important;
-}
-
-#searchLight.border-radius-1 #searchLightBlurredBackground,
-#searchLight.border-radius-1 StBoxLayout.search-section-content,
-#searchLight.border-radius-1,
-#searchLightBox.border-radius-1 {
-  border-radius: 8px !important;
-}
-
-#searchLight.border-radius-2 #searchLightBlurredBackground,
-#searchLight.border-radius-2 StBoxLayout.search-section-content,
-#searchLight.border-radius-2,
-#searchLightBox.border-radius-2 {
-  border-radius: 16px !important;
-}
-
-#searchLight.border-radius-3 #searchLightBlurredBackground,
-#searchLight.border-radius-3 StBoxLayout.search-section-content,
-#searchLight.border-radius-3,
-#searchLightBox.border-radius-3 {
-  border-radius: 20px !important;
-}
-
-#searchLight.border-radius-4 #searchLightBlurredBackground,
-#searchLight.border-radius-4 StBoxLayout.search-section-content,
-#searchLight.border-radius-4,
-#searchLightBox.border-radius-4 {
-  border-radius: 24px !important;
-}
-
-#searchLight.border-radius-5 #searchLightBlurredBackground,
-#searchLight.border-radius-5 StBoxLayout.search-section-content,
-#searchLight.border-radius-5,
-#searchLightBox.border-radius-5 {
-  border-radius: 28px !important;
-}
-
-#searchLight.border-radius-6 #searchLightBlurredBackground,
-#searchLight.border-radius-6 StBoxLayout.search-section-content,
-#searchLight.border-radius-6,
-#searchLightBox.border-radius-6 {
-  border-radius: 32px !important;
-}
-
-#searchLight.border-radius-7 #searchLightBlurredBackground,
-#searchLight.border-radius-7 StBoxLayout.search-section-content,
-#searchLight.border-radius-7,
-#searchLightBox.border-radius-7 {
-  border-radius: 48px !important;
+#searchLight #searchResultsContent {
+  padding-left: 12px;
+  padding-right: 12px;
 }
