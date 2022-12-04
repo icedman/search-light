@@ -366,7 +366,7 @@ class Extension {
 
     // background
     if (this._background) {
-      this._bgActor.set_position(-x, -y);
+      this._bgActor.set_position(this.monitor.x-x, this.monitor.y-y);
       this._bgActor.set_size(this.monitor.width, this.monitor.height);
       this._bgActor
         .get_parent()
@@ -505,8 +505,6 @@ class Extension {
     this._background = background_parent;
     this._background.opacity = 0;
     this._background.visible = false;
-    this._background.x = this.mainContainer.x;
-    this._background.y = this.mainContainer.y;
   }
 
   show() {
@@ -517,6 +515,7 @@ class Extension {
     let background = Main.layoutManager._backgroundGroup.get_child_at_index(0);
     this._bgActor.set_content(background.get_content());
 
+    this._setupCorners();
     this._updateCss();
     this._layout();
 
