@@ -362,6 +362,8 @@ class Extension {
     this.mainContainer.insert_child_below(background_parent, this.container);
     this._background = background_parent;
     this._background.visible = false;
+    this._background.x = this.mainContainer.x;
+    this._background.y = this.mainContainer.y;
   }
 
   show() {
