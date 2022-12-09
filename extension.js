@@ -21,12 +21,15 @@
 
 const GETTEXT_DOMAIN = 'search-light';
 
-const { GObject, St, Clutter, Shell, Meta } = imports.gi;
+const { Gtk, Gdk, Gio, GObject, St, Clutter, Shell, Meta } = imports.gi;
 
 const ExtensionUtils = imports.misc.extensionUtils;
 const Main = imports.ui.main;
+const PanelMenu = imports.ui.panelMenu;
 const GrabHelper = imports.ui.grabHelper;
 const Me = ExtensionUtils.getCurrentExtension();
+const UIFolderPath = Me.dir.get_child('ui').get_path();
+
 const { schemaId, settingsKeys, SettingsKeys } = Me.imports.preferences.keys;
 
 const KeyboardShortcuts = Me.imports.keybinding.KeyboardShortcuts;
@@ -70,6 +73,9 @@ class Extension {
       let n = name.replace(/-/g, '_');
       this[n] = value;
       switch (name) {
+        case 'show-panel-icon':
+          this._indicator.visible = value;
+          break;
         case 'blur-background':
         case 'border-radius':
           this._setupCorners();
@@ -142,7 +148,20 @@ class Extension {
       this
     );
 
-    log('enabled');
+    // log('enabled');
+    const indicatorName = 'search-light';
+    this._indicator = new PanelMenu.Button(0.0, indicatorName, false);
+    let icon = new St.Icon({
+      gicon: new Gio.ThemedIcon({ name: 'edit-find-symbolic' }),
+      style_class: 'system-status-icon',
+    });
+    this._indicator.visible = this.show_panel_icon;
+    this._indicator.add_child(icon);
+    Main.panel.addToStatusArea(indicatorName, this._indicator);
+    this._indicator.connect(
+      'button-press-event',
+      this._toggle_search_light.bind(this)
+    );
   }
 
   disable() {

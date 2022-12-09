@@ -80,4 +80,8 @@ SettingsKeys.setKeys({
     default_value: [1, 1, 1, 0],
     widget_type: 'color',
   },
+  'show-panel-icon': {
+    default_value: false,
+    widget_type: 'switch',
+  },
 });

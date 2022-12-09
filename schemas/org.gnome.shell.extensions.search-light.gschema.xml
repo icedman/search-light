@@ -92,5 +92,10 @@
         <summary>entry text color</summary>
         <description>Set entry text color.</description>
     </key>
+    <key type="b" name="show-panel-icon">
+        <default>false</default>
+        <summary>Show panel icon</summary>
+        <description></description>
+    </key>
   </schema>
 </schemalist>
