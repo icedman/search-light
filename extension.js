@@ -165,6 +165,9 @@ class Extension {
   }
 
   disable() {
+    this._indicator.destroy();
+    this._indicator = null;
+
     this._style.unloadAll();
     this._style = null;
 
