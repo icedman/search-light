@@ -21,7 +21,7 @@
 
 const GETTEXT_DOMAIN = 'search-light';
 
-const { Gtk, Gdk, Gio, GObject, St, Clutter, Shell, Meta } = imports.gi;
+const { Gio, GObject, St, Clutter, Shell, Meta } = imports.gi;
 
 const ExtensionUtils = imports.misc.extensionUtils;
 const Main = imports.ui.main;
