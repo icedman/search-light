@@ -261,6 +261,13 @@ class Extension {
         this._search._text.get_parent().grab_key_focus();
       }
     };
+    if (!Main.overview._hide) {
+      Main.overview._hide = Main.overview.hide;
+    }
+    Main.overview.hide = () => {
+      this.mainContainer.opacity = 0;
+      Main.overview._hide();
+    };
 
     this._queryDisplay();
 
@@ -345,6 +352,10 @@ class Extension {
     if (Main.overview._toggle) {
       Main.overview.toggle = Main.overview._toggle;
       Main.overview._toggle = null;
+    }
+    if (Main.overview._hide) {
+      Main.overview.hide = Main.overview._hide;
+      Main.overview._hide = null;
     }
   }
 
@@ -642,7 +653,9 @@ class Extension {
     if (this._inOverview) return;
     if (!this._visible) {
       this.show();
-      global.stage.set_key_focus(this._entry);
+      if (this._entry) {
+        global.stage.set_key_focus(this._entry);
+      }
     } else {
       global.stage.set_key_focus(null);
     }
