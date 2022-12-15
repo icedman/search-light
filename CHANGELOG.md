@@ -4,6 +4,10 @@
 * add unit conversion
 * add currency conversion
 
+## release 11
+
+* fix close on enter/click
+
 ## release 9
 
 * add panel search icon

@@ -304,6 +304,7 @@ class Extension {
       this._search.__searchCancelled = this._search._searchCancelled;
       this._search._searchCancelled = () => {};
     }
+    this._search._text.get_parent().grab_key_focus();
     this._textChangedEventId = this._search._text.connect(
       'text-changed',
       () => {
@@ -569,6 +570,8 @@ class Extension {
     this._release_ui();
     this._remove_events();
     this.mainContainer.hide();
+
+    // this._hidePopups();
   }
 
   _updateCss(disable) {
@@ -702,14 +705,54 @@ class Extension {
     }
   }
 
+  _hidePopups() {
+    let popup = this._lastPopup;
+    this._lastPopup = null;
+    try {
+      if (!popup.close && popup._getTopMenu()) {
+        popup = popup._getTopMenu();
+      }
+
+      // elaborate way of hiding the popup
+      popup.opacity = 0;
+      this._startupSeq = this._hiTimer.runSequence([
+        {
+          func: () => {
+            popup.opacity = 0;
+          },
+          delay: 0,
+        },
+        {
+          func: () => {
+            popup._delegate.close(false);
+          },
+          delay: 250,
+        },
+      ]);
+    } catch (err) {
+      log(err);
+    }
+  }
+
   _onFocusWindow(w, e) {}
 
-  _onKeyFocusChanged() {
+  _onKeyFocusChanged(previous) {
     if (!this._entry) return;
     let focus = global.stage.get_key_focus();
     let appearFocused =
       this._entry.contains(focus) || this._searchResults.contains(focus);
+
     if (!appearFocused) {
+      // popups are not handled well.. hide immediately
+      if (
+        focus &&
+        focus.style_class &&
+        focus.style_class.includes('popup-menu')
+      ) {
+        this._lastPopup = focus;
+        this._hidePopups();
+      }
+
       this.hide();
     }
 
