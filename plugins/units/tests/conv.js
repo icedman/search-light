@@ -86,9 +86,7 @@ function parse_and_convert(q) {
         if (convertFrom) {
           let fn = `to${ucfirst(unitTo.name)}`;
           let convertTo =
-            convertFrom[fn] ||
-            convertFrom[`${fn}s`] ||
-            convertFrom[`${fn}es`];
+            convertFrom[fn] || convertFrom[`${fn}s`] || convertFrom[`${fn}es`];
           if (convertTo) {
             let res = convertTo().toFixed(6);
             if (!hasDecimals && Math.round(res) == res) {
@@ -98,8 +96,8 @@ function parse_and_convert(q) {
               value,
               unitFrom,
               unitTo,
-              result: res
-            }
+              result: res,
+            };
           }
         }
       }

@@ -32,6 +32,8 @@ const UIFolderPath = Me.dir.get_child('ui').get_path();
 
 const { schemaId, settingsKeys, SettingsKeys } = Me.imports.preferences.keys;
 
+const UnitConversionProvider = Me.imports.plugins.units.convert.Provider;
+
 const KeyboardShortcuts = Me.imports.keybinding.KeyboardShortcuts;
 const Timer = Me.imports.timer.Timer;
 const Style = Me.imports.style.Style;
@@ -51,6 +53,10 @@ var SearchLight = GObject.registerClass(
     }
   }
 );
+
+function getOverviewSearchResult() {
+  return Main.overview._overview.controls._searchController._searchResults;
+}
 
 class Extension {
   constructor(uuid) {
@@ -162,6 +168,10 @@ class Extension {
       'button-press-event',
       this._toggle_search_light.bind(this)
     );
+
+    // todo ... this can only show app icons?
+    // this._unitConversionProvider = new UnitConversionProvider();
+    // getOverviewSearchResult()._registerProvider(this._unitConversionProvider);
   }
 
   disable() {
@@ -194,6 +204,13 @@ class Extension {
 
     this._hiTimer.stop();
     this._hiTimer = null;
+
+    if (this._unitConversionProvider) {
+      getOverviewSearchResult()._unregisterProvider(
+        this._unitConversionProvider
+      );
+      this._unitConversionProvider = null;
+    }
   }
 
   _updateShortcut(disable) {
