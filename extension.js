@@ -649,7 +649,7 @@ class Extension {
     }
 
     // log(styles);
-    this._style.build('custom', styles);
+    this._style.build('custom-search-light', styles);
   }
 
   _toggle_search_light() {
