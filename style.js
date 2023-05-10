@@ -4,7 +4,7 @@ const { St, Shell, GObject, Gio, GLib, Gtk, Meta, Clutter } = imports.gi;
 
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
-const CustomStylesPath = Me.dir.get_child('./').get_path();
+const CustomStylesPath = "/tmp";
 
 var Style = class {
   constructor() {
