@@ -2,6 +2,10 @@
 
 const { Adw, Gdk, Gio, GLib, GObject, Gtk, Pango } = imports.gi;
 
+// import Gdk from 'gi://Gdk';
+// import Gtk from 'gi://Gtk';
+// import Gio from 'gi://Gio';
+
 class PrefKeys {
   constructor() {
     this._keys = {};
@@ -177,8 +181,8 @@ app.connect('activate', (me) => {
   const pages_stack = page.get_parent(); // AdwViewStack
   const content_stack = pages_stack.get_parent().get_parent(); // GtkStack
   const preferences = content_stack.get_parent(); // GtkBox
-  const headerbar = preferences.get_first_child(); // AdwHeaderBar
-  headerbar.pack_start(builder.get_object('info_menu'));
+  // const headerbar = preferences.get_first_child(); // AdwHeaderBar
+  // headerbar.pack_start(builder.get_object('info_menu'));
 
   // setup menu actions
   const actionGroup = new Gio.SimpleActionGroup();

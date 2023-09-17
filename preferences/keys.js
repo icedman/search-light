@@ -1,13 +1,16 @@
 'use strict';
 
-const ExtensionUtils = imports.misc.extensionUtils;
-const Me = ExtensionUtils.getCurrentExtension();
-const { PrefKeys } = Me.imports.preferences.prefKeys;
+// const ExtensionUtils = imports.misc.extensionUtils;
+// const Me = ExtensionUtils.getCurrentExtension();
+// const { PrefKeys } = Me.imports.preferences.prefKeys;
 
-var schemaId = 'org.gnome.shell.extensions.search-light';
+import { PrefKeys } from './prefKeys.js';
 
-var SettingsKeys = new PrefKeys();
-SettingsKeys.setKeys({
+export let schemaId = 'org.gnome.shell.extensions.search-light';
+
+export let settingsKeys = new PrefKeys();
+
+settingsKeys.setKeys({
   'border-radius': {
     default_value: 0,
     widget_type: 'scale',

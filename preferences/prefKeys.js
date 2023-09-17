@@ -1,7 +1,7 @@
 const Gdk = imports.gi.Gdk;
 const GLib = imports.gi.GLib;
 
-var PrefKeys = class {
+export let PrefKeys = class {
   constructor() {
     this._keys = {};
   }
