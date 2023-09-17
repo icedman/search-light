@@ -15,30 +15,17 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
-/
+ */
 
-/* exported init */
+import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import Meta from 'gi://Meta';
+import Shell from 'gi://Shell';
+import GObject from 'gi://GObject';
+import Clutter from 'gi://Clutter';
+import St from 'gi://St';
 
-const GETTEXT_DOMAIN = 'search-light';
-
-const { Gio, GObject, St, Clutter, Shell, Meta } = imports.gi;
-
-const ExtensionUtils = imports.misc.extensionUtils;
-const Main = imports.ui.main;
-const PanelMenu = imports.ui.panelMenu;
-const GrabHelper = imports.ui.grabHelper;
-const Me = ExtensionUtils.getCurrentExtension();
-const UIFolderPath = Me.dir.get_child('ui').get_path();
-
-const { schemaId, settingsKeys, SettingsKeys } = Me.imports.preferences.keys;
-
-const KeyboardShortcuts = Me.imports.keybinding.KeyboardShortcuts;
-const Timer = Me.imports.timer.Timer;
-const Style = Me.imports.style.Style;
-const Chamfer = Me.imports.chamfer.Chamfer;
-const ShapeEffect = Me.imports.effects.color_effect.ShapeEffect;
-
-const _ = ExtensionUtils.gettext;
+import { Timer } from './timer.js';
+import { Style } from './style.js';
 
 var SearchLight = GObject.registerClass(
   {},
@@ -52,48 +39,23 @@ var SearchLight = GObject.registerClass(
   }
 );
 
-class Extension {
-  constructor(uuid) {
-    this._uuid = uuid;
-
-    ExtensionUtils.initTranslations(GETTEXT_DOMAIN);
-  }
-
+export default class SearchLightExt {
   enable() {
-    Main._searchLight = this;
     this._style = new Style();
 
-    this._hiTimer = new Timer();
-    this._hiTimer.warmup(15);
+    // three available timers
+    // for persistent runs
+    this._timer = new Timer('loop timer');
+    this._timer.initialize(3500);
 
-    this._settings = ExtensionUtils.getSettings(schemaId);
-    this._settingsKeys = SettingsKeys;
+    // for animation runs
+    // resolution (15) will be modified by animation-fps
+    this._hiTimer = new Timer('hi-res timer');
+    this._hiTimer.initialize(15);
 
-    SettingsKeys.connectSettings(this._settings, (name, value) => {
-      let n = name.replace(/-/g, '_');
-      this[n] = value;
-      switch (name) {
-        case 'show-panel-icon':
-          this._indicator.visible = value;
-          break;
-        case 'blur-background':
-        case 'border-radius':
-          this._setupCorners();
-          break;
-        case 'shortcut-search':
-          this._updateShortcut();
-          break;
-      }
-    });
-    Object.keys(SettingsKeys._keys).forEach((k) => {
-      let key = SettingsKeys.getKey(k);
-      let name = k.replace(/-/g, '_');
-      this[name] = key.value;
-      if (key.options) {
-        this[`${name}_options`] = key.options;
-      }
-      // log(`${name} ${key.value}`);
-    });
+    // for deferred or debounced runs
+    this._loTimer = new Timer('lo-res timer');
+    this._loTimer.initialize(750);
 
     this.mainContainer = new SearchLight();
     this.mainContainer._delegate = this;
@@ -116,10 +78,10 @@ class Extension {
     this.mainContainer.add_child(this.container);
     this._setupBackground();
 
-    this.accel = new KeyboardShortcuts();
-    this.accel.enable();
+    // this.accel = new KeyboardShortcuts();
+    // this.accel.enable();
 
-    this._updateShortcut();
+    // this._updateShortcut();
     this._updateCss();
 
     Main.overview.connectObject(
@@ -148,69 +110,154 @@ class Extension {
       this
     );
 
-    // log('enabled');
-    const indicatorName = 'search-light';
-    this._indicator = new PanelMenu.Button(0.0, indicatorName, false);
-    let icon = new St.Icon({
-      gicon: new Gio.ThemedIcon({ name: 'edit-find-symbolic' }),
-      style_class: 'system-status-icon',
-    });
-    this._indicator.visible = this.show_panel_icon;
-    this._indicator.add_child(icon);
-    Main.panel.addToStatusArea(indicatorName, this._indicator);
-    this._indicator.connect(
-      'button-press-event',
-      this._toggle_search_light.bind(this)
-    );
+    this._loTimer.runOnce(() => {
+      this.show();
+      log('SearchLightExt: ???');
+    }, 1500);
   }
 
   disable() {
-    this._indicator.destroy();
-    this._indicator = null;
-
-    this._style.unloadAll();
-    this._style = null;
-
-    SettingsKeys.disconnectSettings();
-    this._settings = null;
-
-    if (this.accel) {
-      this.accel.disable();
-      delete this.accel;
-      this.accel = null;
-    }
-
-    // this will release the ui
-    this.hide();
-
-    if (this.mainContainer) {
-      Main.layoutManager.removeChrome(this.mainContainer);
-      this.mainContainer.destroy();
-      this.mainContainer = null;
-      this._background = null;
-      this._corners = null;
-      this._edges = null;
-    }
-
-    this._hiTimer.stop();
-    this._hiTimer = null;
+    this._timer?.shutdown();
+    this._hiTimer?.shutdown();
+    this._loTimer?.shutdown();
   }
 
-  _updateShortcut(disable) {
-    this.accel.unlisten();
+  _setupBackground() {
+    // todo... needs clarity
 
-    let shortcut = '';
-    try {
-      shortcut = (this.shortcut_search || []).join('');
-    } catch (err) {
-      //
-    }
-    if (shortcut == '') {
-      shortcut = '<Control><Super>Space';
+    /*
+    SearchLight (#searchLight)
+      -> container (#searchLightBox)
+      -> background (#searchLightBlurredBackground)
+          -> blurEffect
+          -> image (#searchLightBlurredBackgroundImage)
+              -> bgActor
+          -> corners
+    */
+
+    if (this._background && this._background.get_parent()) {
+      this._background.get_parent().remove_child(this._background);
     }
 
-    if (!disable) {
-      this.accel.listenFor(shortcut, this._toggle_search_light.bind(this));
+    this._bgActor = new Meta.BackgroundActor();
+    let background = Main.layoutManager._backgroundGroup.get_child_at_index(0);
+    this._bgActor.set_content(background.get_content());
+    // this._blurEffect = new Shell.BlurEffect({
+    //   name: 'blur',
+    //   brightness: this.blur_brightness,
+    //   sigma: this.blur_sigma,
+    //   mode: Shell.BlurMode.ACTOR,
+    // });
+
+    // this._shapeEffect = new ShapeEffect();
+    let background_parent = new St.Widget({
+      name: 'searchLightBlurredBackground',
+      layout_manager: new Clutter.BinLayout(),
+      x: 0,
+      y: 0,
+      width: 20,
+      height: 20,
+      // effect: this._shapeEffect,
+    });
+
+    let image = new St.Widget({
+      name: 'searchLightBlurredBackgroundImage',
+      x: 0,
+      y: 0,
+      width: 20,
+      height: 20,
+      // effect: this._blurEffect,
+    });
+
+    image.add_child(this._bgActor);
+    background_parent.add_child(image);
+    this._bgActor.clip_to_allocation = true;
+    this._bgActor.offscreen_redirect = Clutter.OffscreenRedirect.ALWAYS;
+
+    this.mainContainer.insert_child_below(background_parent, this.container);
+    this._background = background_parent;
+    this._background.opacity = 0;
+    this._background.visible = false;
+  }
+
+  show() {
+    if (Main.overview.visible) return;
+
+    this._acquire_ui();
+
+    let background = Main.layoutManager._backgroundGroup.get_child_at_index(0);
+    this._bgActor.set_content(background.get_content());
+
+    // this._setupCorners();
+    this._updateCss();
+    this._layout();
+
+    // this._hiTimer.runOnce(() => {
+    //   this._layout();
+    // }, 10);
+
+    this._add_events();
+
+    this.mainContainer.opacity = 255;
+    this.mainContainer.show();
+    this.container.show();
+  }
+
+  hide() {
+    this._visible = false;
+    this._release_ui();
+    this._remove_events();
+    this.mainContainer.hide();
+    // this._hidePopups();
+  }
+
+  _layout() {
+    this._queryDisplay();
+
+    // container size
+    this.width =
+      600 + ((this.sw * this.scaleFactor) / 2) * (this.scale_width || 0);
+    this.height =
+      400 + ((this.sh * this.scaleFactor) / 2) * (this.scale_height || 0);
+
+    // initial height
+    let font_size = 14;
+    if (this.font_size) {
+      font_size = this.font_size_options[this.font_size];
+    }
+    if (this.entry_font_size) {
+      font_size = this.entry_font_size_options[this.entry_font_size];
+    }
+
+    let padding = {
+      14: 14 * 2.5,
+      16: 16 * 2.4,
+      18: 18 * 2.2,
+      20: 20 * 2.0,
+      22: 22 * 1.8,
+      24: 24 * 1.6,
+    };
+    this.initial_height = padding[font_size] * this.scaleFactor;
+    this.initial_height += font_size * 2 * this.scaleFactor;
+
+    // position
+    let x = this.monitor.x + this.sw / 2 - this.width / 2;
+    let y = this.monitor.y + this.sh / 2 - this.height / 2;
+    this._visible = true;
+
+    this.container.set_size(this.width, this.initial_height);
+    this.mainContainer.set_size(this.width, this.initial_height);
+    this.mainContainer.set_position(x, y);
+
+    // background
+    if (this._background) {
+      this._bgActor.set_position(this.monitor.x - x, this.monitor.y - y);
+      this._bgActor.set_size(this.monitor.width, this.monitor.height);
+      this._bgActor
+        .get_parent()
+        .set_size(this.monitor.width, this.monitor.height);
+      this._background.set_position(0, 0);
+      this._background.set_size(this.monitor.width, this.monitor.height);
     }
   }
 
@@ -242,10 +289,10 @@ class Extension {
     this.sh = this.monitor.height;
 
     if (this._last_monitor_count != Main.layoutManager.monitors.length) {
-      this._settings.set_int(
-        'monitor-count',
-        Main.layoutManager.monitors.length
-      );
+      // this._settings.set_int(
+      //   'monitor-count',
+      //   Main.layoutManager.monitors.length
+      // );
       this._last_monitor_count = Main.layoutManager.monitors.length;
     }
   }
@@ -360,220 +407,6 @@ class Extension {
     }
   }
 
-  _layout() {
-    this._queryDisplay();
-
-    // container size
-    this.width =
-      600 + ((this.sw * this.scaleFactor) / 2) * (this.scale_width || 0);
-    this.height =
-      400 + ((this.sh * this.scaleFactor) / 2) * (this.scale_height || 0);
-
-    // initial height
-    let font_size = 14;
-    if (this.font_size) {
-      font_size = this.font_size_options[this.font_size];
-    }
-    if (this.entry_font_size) {
-      font_size = this.entry_font_size_options[this.entry_font_size];
-    }
-
-    let padding = {
-      14: 14 * 2.5,
-      16: 16 * 2.4,
-      18: 18 * 2.2,
-      20: 20 * 2.0,
-      22: 22 * 1.8,
-      24: 24 * 1.6,
-    };
-    this.initial_height = padding[font_size] * this.scaleFactor;
-    this.initial_height += font_size * 2 * this.scaleFactor;
-
-    // position
-    let x = this.monitor.x + this.sw / 2 - this.width / 2;
-    let y = this.monitor.y + this.sh / 2 - this.height / 2;
-    this._visible = true;
-
-    this.container.set_size(this.width, this.initial_height);
-    this.mainContainer.set_size(this.width, this.initial_height);
-    this.mainContainer.set_position(x, y);
-
-    // background
-    if (this._background) {
-      this._bgActor.set_position(this.monitor.x - x, this.monitor.y - y);
-      this._bgActor.set_size(this.monitor.width, this.monitor.height);
-      this._bgActor
-        .get_parent()
-        .set_size(this.monitor.width, this.monitor.height);
-      this._background.set_position(0, 0);
-      this._background.set_size(this.monitor.width, this.monitor.height);
-    }
-
-    // draw magenta on edges and rounded corners
-    if (!this._corners) {
-      this._setupCorners();
-    }
-    if (this._corners && this._edges) {
-      this._corners[0].x = 0;
-      this._corners[0].y = 0;
-      this._corners[1].x = this.width - this._corners[1].width;
-      this._corners[1].y = 0;
-      this._corners[2].x = this.width - this._corners[1].width;
-      this._corners[2].y = this.initial_height - this._corners[1].height;
-      this._corners[3].x = 0;
-      this._corners[3].y = this.initial_height - this._corners[1].height;
-      this._edges[0].x = 0;
-      this._edges[0].y = 0;
-      this._edges[0].width = this.width;
-      this._edges[0].height = 2;
-      this._edges[1].x = 0;
-      this._edges[1].y = 0;
-      this._edges[1].width = 2;
-      this._edges[1].height = this.height;
-      this._edges[2].x = this.width - 1;
-      this._edges[2].y = 0;
-      this._edges[2].width = 2;
-      this._edges[2].height = this.height;
-      this._edges[3].x = 0;
-      this._edges[3].y = this.initial_height - 2;
-      this._edges[3].width = this.width;
-      this._edges[3].height = 2;
-    }
-  }
-
-  _setupCorners() {
-    if (this._corners) {
-      this._corners.forEach((c) => {
-        if (c.get_parent()) {
-          c.get_parent().remove_child(c);
-        }
-      });
-    }
-    if (this._edges) {
-      this._edges.forEach((c) => {
-        if (c.get_parent()) {
-          c.get_parent().remove_child(c);
-        }
-      });
-    }
-
-    if (!this.blur_background) {
-      return;
-    }
-
-    let rads = [2, 16, 18, 20, 22, 24, 28, 32];
-    let r = rads[Math.floor(this.border_radius)];
-
-    this._corners = [];
-    for (let i = 0; i < 4; i++) {
-      this._corners.push(new Chamfer({ size: r, position: i }));
-      this._background.add_child(this._corners[i]);
-      this._corners[i].pixel = [
-        1 / this._background.width,
-        1 / this._background.height,
-      ];
-    }
-    this._edges = [];
-    this._edges.push(new St.Widget());
-    this._edges.push(new St.Widget());
-    this._edges.push(new St.Widget());
-    this._edges.push(new St.Widget());
-    this._edges.forEach((e) => {
-      e.style = 'background: rgba(255,0,255,1)';
-      e.reactive = false;
-      this._background.add_child(e);
-    });
-  }
-
-  _setupBackground() {
-    // todo... needs clarity
-
-    /*
-    SearchLight (#searchLight)
-      -> container (#searchLightBox)
-      -> background (#searchLightBlurredBackground)
-          -> blurEffect
-          -> image (#searchLightBlurredBackgroundImage)
-              -> bgActor
-          -> corners
-    */
-
-    if (this._background && this._background.get_parent()) {
-      this._background.get_parent().remove_child(this._background);
-    }
-
-    this._bgActor = new Meta.BackgroundActor();
-    let background = Main.layoutManager._backgroundGroup.get_child_at_index(0);
-    this._bgActor.set_content(background.get_content());
-    this._blurEffect = new Shell.BlurEffect({
-      name: 'blur',
-      brightness: this.blur_brightness,
-      sigma: this.blur_sigma,
-      mode: Shell.BlurMode.ACTOR,
-    });
-    this._shapeEffect = new ShapeEffect();
-    let background_parent = new St.Widget({
-      name: 'searchLightBlurredBackground',
-      layout_manager: new Clutter.BinLayout(),
-      x: 0,
-      y: 0,
-      width: 20,
-      height: 20,
-      effect: this._shapeEffect,
-    });
-
-    let image = new St.Widget({
-      name: 'searchLightBlurredBackgroundImage',
-      x: 0,
-      y: 0,
-      width: 20,
-      height: 20,
-      effect: this._blurEffect,
-    });
-
-    image.add_child(this._bgActor);
-    background_parent.add_child(image);
-    this._bgActor.clip_to_allocation = true;
-    this._bgActor.offscreen_redirect = Clutter.OffscreenRedirect.ALWAYS;
-
-    this.mainContainer.insert_child_below(background_parent, this.container);
-    this._background = background_parent;
-    this._background.opacity = 0;
-    this._background.visible = false;
-  }
-
-  show() {
-    if (Main.overview.visible) return;
-
-    this._acquire_ui();
-
-    let background = Main.layoutManager._backgroundGroup.get_child_at_index(0);
-    this._bgActor.set_content(background.get_content());
-
-    this._setupCorners();
-    this._updateCss();
-    this._layout();
-
-    // this._hiTimer.runOnce(() => {
-    //   this._layout();
-    // }, 10);
-
-    this._add_events();
-
-    this.mainContainer.opacity = 255;
-    this.mainContainer.show();
-    this.container.show();
-  }
-
-  hide() {
-    this._visible = false;
-    this._release_ui();
-    this._remove_events();
-    this.mainContainer.hide();
-
-    // this._hidePopups();
-  }
-
   _updateCss(disable) {
     let bg = this.background_color || [0, 0, 0, 0.5];
     if (this.text_color && this.text_color[3] > 0) {
@@ -589,9 +422,9 @@ class Extension {
     // blurred backgrounds!
     this._background.visible = this.blur_background;
     this._background.opacity = 255;
-    this._blurEffect.brightness = this.blur_brightness;
-    this._blurEffect.sigma = this.blur_sigma;
-    this._shapeEffect.color = this.background_color;
+    // this._blurEffect.brightness = this.blur_brightness;
+    // this._blurEffect.sigma = this.blur_sigma;
+    // this._shapeEffect.color = this.background_color;
 
     let styles = [];
     {
@@ -628,17 +461,16 @@ class Extension {
     }
 
     if (this.font_size !== null) {
-      let f = this.font_size_options[this.font_size];
-      if (f) {
-        styles.push(`#searchLightBox * { font-size: ${f}pt !important; }`);
-      }
-
-      f = this.entry_font_size_options[this.entry_font_size];
-      if (f) {
-        styles.push(
-          `#searchLightBox > StEntry, #searchLightBox > StEntry:focus { font-size: ${f}pt !important; }`
-        );
-      }
+      // let f = this.font_size_options[this.font_size];
+      // if (f) {
+      //   styles.push(`#searchLightBox * { font-size: ${f}pt !important; }`);
+      // }
+      // f = this.entry_font_size_options[this.entry_font_size];
+      // if (f) {
+      //   styles.push(
+      //     `#searchLightBox > StEntry, #searchLightBox > StEntry:focus { font-size: ${f}pt !important; }`
+      //   );
+      // }
     }
 
     let clr = this._style.rgba(this.text_color);
@@ -784,8 +616,4 @@ class Extension {
   _onFullScreen() {
     this.hide();
   }
-}
-
-function init(meta) {
-  return new Extension(meta.uuid);
 }
