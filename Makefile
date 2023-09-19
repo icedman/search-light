@@ -22,6 +22,11 @@ publish:
 	cp README.md ./build
 	cp CHANGELOG.md ./build
 	cp -R schemas ./build
+	rm -rf ./build/effects
+	rm -rf ./build/_*.js
+	rm -rf ./build/utils.js
+	rm -rf ./build/drawing.js
+	rm -rf ./build/chamfer.js
 	rm -rf ./*.zip
 	cd build ; \
 	zip -qr ../search-light@icedman.github.com.zip .

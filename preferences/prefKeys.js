@@ -1,5 +1,5 @@
-const Gdk = imports.gi.Gdk;
-const GLib = imports.gi.GLib;
+import Gdk from 'gi://Gdk';
+import GLib from 'gi://GLib';
 
 export let PrefKeys = class {
   constructor() {

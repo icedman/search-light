@@ -4,22 +4,11 @@ import Gdk from 'gi://Gdk';
 import Gtk from 'gi://Gtk';
 import Gio from 'gi://Gio';
 
-// const Me = imports.misc.extensionUtils.getCurrentExtension();
-// const { SettingsKeys } = Me.imports.preferences.keys;
-
-// const UIFolderPath = Me.dir.get_child('ui').get_path();
-
-// const ShortcutSettingWidget = Me.imports.shortcuts.ShortcutSettingWidget;
 import { ShortcutSettingWidget } from './shortcuts.js';
 
 const GETTEXT_DOMAIN = 'search-light';
 
-// const ExtensionUtils = imports.misc.extensionUtils;
-
-// const { schemaId, settingsKeys } = Me.imports.preferences.keys;
-import { schemaId, settingsKeys as SettingsKeys } from './preferences/keys.js';
-
-// import Adw from 'gi://Adw';
+import { schemaId, SettingsKeys } from './preferences/keys.js';
 
 import {
   ExtensionPreferences,
@@ -27,12 +16,13 @@ import {
 } from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
 export default class Preferences extends ExtensionPreferences {
-  // constructor(metadata) {
-  //   super(metadata);
-    // let iconTheme = Gtk.IconTheme.get_for_display(Gdk.Display.get_default());
-    // iconTheme.add_search_path(`${UIFolderPath}/icons`);
+  constructor(metadata) {
+    super(metadata);
+    let iconTheme = Gtk.IconTheme.get_for_display(Gdk.Display.get_default());
+    let UIFolderPath = `${this.dir.get_path()}/ui`;
+    iconTheme.add_search_path(`${UIFolderPath}/icons`);
     // ExtensionUtils.initTranslations(GETTEXT_DOMAIN);
-  // }
+  }
 
   updateMonitors(window, builder, settings) {
     // monitors
@@ -101,9 +91,9 @@ export default class Preferences extends ExtensionPreferences {
     window.set_search_enabled(true);
 
     let settings = this.getSettings(schemaId);
-
-    SettingsKeys.connectBuilder(builder);
-    SettingsKeys.connectSettings(settings);
+    let settingsKeys = SettingsKeys();
+    settingsKeys.connectBuilder(builder);
+    settingsKeys.connectSettings(settings);
 
     this.addButtonEvents(window, builder, settings);
     this.updateMonitors(window, builder, settings);

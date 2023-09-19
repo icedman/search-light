@@ -4,6 +4,12 @@
 * add unit conversion
 * add currency conversion
 
+## release 
+
+* port to gnome 45
+* remove blur background (permanently?)
+* remove panel icon (temporarily?)
+
 ## release 11
 
 * fix close on enter/click

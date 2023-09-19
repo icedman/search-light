@@ -27,6 +27,14 @@ import St from 'gi://St';
 import { Timer } from './timer.js';
 import { Style } from './style.js';
 
+import { schemaId, SettingsKeys } from './preferences/keys.js';
+import { KeyboardShortcuts } from './keybinding.js';
+
+import {
+  Extension,
+  gettext as _,
+} from 'resource:///org/gnome/shell/extensions/extension.js';
+
 var SearchLight = GObject.registerClass(
   {},
   class SearchLight extends St.Widget {
@@ -39,23 +47,45 @@ var SearchLight = GObject.registerClass(
   }
 );
 
-export default class SearchLightExt {
+export default class SearchLightExt extends Extension {
   enable() {
     this._style = new Style();
 
-    // three available timers
-    // for persistent runs
-    this._timer = new Timer('loop timer');
-    this._timer.initialize(3500);
-
-    // for animation runs
-    // resolution (15) will be modified by animation-fps
     this._hiTimer = new Timer('hi-res timer');
     this._hiTimer.initialize(15);
 
     // for deferred or debounced runs
     this._loTimer = new Timer('lo-res timer');
     this._loTimer.initialize(750);
+
+    this._settings = this.getSettings(schemaId);
+    this._settingsKeys = SettingsKeys();
+
+    this._settingsKeys.connectSettings(this._settings, (name, value) => {
+      let n = name.replace(/-/g, '_');
+      this[n] = value;
+      switch (name) {
+        case 'show-panel-icon':
+          this._indicator.visible = value;
+          break;
+        case 'blur-background':
+        case 'border-radius':
+          // this._setupCorners();
+          break;
+        case 'shortcut-search':
+          // this._updateShortcut();
+          break;
+      }
+    });
+    Object.keys(this._settingsKeys._keys).forEach((k) => {
+      let key = this._settingsKeys.getKey(k);
+      let name = k.replace(/-/g, '_');
+      this[name] = key.value;
+      if (key.options) {
+        this[`${name}_options`] = key.options;
+      }
+      // log(`${name} ${key.value}`);
+    });
 
     this.mainContainer = new SearchLight();
     this.mainContainer._delegate = this;
@@ -78,10 +108,10 @@ export default class SearchLightExt {
     this.mainContainer.add_child(this.container);
     this._setupBackground();
 
-    // this.accel = new KeyboardShortcuts();
-    // this.accel.enable();
+    this.accel = new KeyboardShortcuts();
+    this.accel.enable();
 
-    // this._updateShortcut();
+    this._updateShortcut();
     this._updateCss();
 
     Main.overview.connectObject(
@@ -110,16 +140,32 @@ export default class SearchLightExt {
       this
     );
 
-    this._loTimer.runOnce(() => {
-      this.show();
-      log('SearchLightExt: ???');
-    }, 1500);
+    // this._loTimer.runOnce(() => {
+    //   this.show();
+    //   log('SearchLightExt: ???');
+    // }, 1500);
   }
 
   disable() {
-    this._timer?.shutdown();
     this._hiTimer?.shutdown();
     this._loTimer?.shutdown();
+    this._hiTimer = null;
+    this._loTimer = null;
+
+    // this._indicator.destroy();
+    // this._indicator = null;
+
+    this._style.unloadAll();
+    this._style = null;
+
+    this._settingsKeys.disconnectSettings();
+    this._settings = null;
+
+    if (this.accel) {
+      this.accel.disable();
+      delete this.accel;
+      this.accel = null;
+    }
   }
 
   _setupBackground() {
@@ -258,6 +304,24 @@ export default class SearchLightExt {
         .set_size(this.monitor.width, this.monitor.height);
       this._background.set_position(0, 0);
       this._background.set_size(this.monitor.width, this.monitor.height);
+    }
+  }
+
+  _updateShortcut(disable) {
+    this.accel.unlisten();
+
+    let shortcut = '';
+    try {
+      shortcut = (this.shortcut_search || []).join('');
+    } catch (err) {
+      //
+    }
+    if (shortcut == '') {
+      shortcut = '<Control><Super>Space';
+    }
+
+    if (!disable) {
+      this.accel.listenFor(shortcut, this._toggle_search_light.bind(this));
     }
   }
 
@@ -461,16 +525,16 @@ export default class SearchLightExt {
     }
 
     if (this.font_size !== null) {
-      // let f = this.font_size_options[this.font_size];
-      // if (f) {
-      //   styles.push(`#searchLightBox * { font-size: ${f}pt !important; }`);
-      // }
-      // f = this.entry_font_size_options[this.entry_font_size];
-      // if (f) {
-      //   styles.push(
-      //     `#searchLightBox > StEntry, #searchLightBox > StEntry:focus { font-size: ${f}pt !important; }`
-      //   );
-      // }
+      let f = this.font_size_options[this.font_size];
+      if (f) {
+        styles.push(`#searchLightBox * { font-size: ${f}pt !important; }`);
+      }
+      f = this.entry_font_size_options[this.entry_font_size];
+      if (f) {
+        styles.push(
+          `#searchLightBox > StEntry, #searchLightBox > StEntry:focus { font-size: ${f}pt !important; }`
+        );
+      }
     }
 
     let clr = this._style.rgba(this.text_color);
