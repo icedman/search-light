@@ -4,7 +4,11 @@
 * add unit conversion
 * add currency conversion
 
-## release 
+## release 15
+
+* fix monitor preference
+
+## release 14
 
 * port to gnome 45
 * remove blur background (permanently?)

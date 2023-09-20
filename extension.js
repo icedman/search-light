@@ -353,10 +353,10 @@ export default class SearchLightExt extends Extension {
     this.sh = this.monitor.height;
 
     if (this._last_monitor_count != Main.layoutManager.monitors.length) {
-      // this._settings.set_int(
-      //   'monitor-count',
-      //   Main.layoutManager.monitors.length
-      // );
+      this._settings.set_int(
+        'monitor-count',
+        Main.layoutManager.monitors.length
+      );
       this._last_monitor_count = Main.layoutManager.monitors.length;
     }
   }
