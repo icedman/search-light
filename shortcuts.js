@@ -1,6 +1,9 @@
 // https://github.com/eonpatapon/gnome-shell-extension-caffeine
 
-const { Gdk, Gio, GLib, GObject, Gtk, Pango } = imports.gi;
+import Gdk from 'gi://Gdk';
+import Gtk from 'gi://Gtk';
+import GObject from 'gi://GObject';
+
 const genParam = (type, name, ...dflt) =>
   GObject.ParamSpec[type](
     name,
@@ -12,7 +15,7 @@ const genParam = (type, name, ...dflt) =>
 
 const _ = (t) => t;
 
-var ShortcutSettingWidget = class extends Gtk.Button {
+export let ShortcutSettingWidget = class extends Gtk.Button {
   static {
     GObject.registerClass(
       {

@@ -1,2 +1,3 @@
 *.zip
+_*.js
 build

@@ -185,6 +185,7 @@
             </child>
           </object>
         </child>
+        <!--
         <child>
           <object class="AdwActionRow">
             <property name="title" translatable="yes">Background Blur</property>
@@ -235,6 +236,7 @@
             </child>
           </object>
         </child>
+        -->
       </object>
     </child>
   </object>
