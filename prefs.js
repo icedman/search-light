@@ -31,16 +31,40 @@ export default class Preferences extends ExtensionPreferences {
     monitors_model.splice(count, 6 - count, []);
   }
 
+  find(n, name) {
+    if (n.get_name() == name) {
+      return n;
+    }
+    let c = n.get_first_child();
+    while (c) {
+      let cn = this.find(c, name);
+      if (cn) {
+        return cn;
+      }
+      c = c.get_next_sibling();
+    }
+    return null;
+  }
+
+  dump(n, l) {
+    let s = '';
+    for (let i = 0; i < l; i++) {
+      s += ' ';
+    }
+    print(`${s}${n.get_name()}`);
+    let c = n.get_first_child();
+    while (c) {
+      this.dump(c, l + 1);
+      c = c.get_next_sibling();
+    }
+  }
+
   addMenu(window, builder) {
     let menu_util = builder.get_object('menu_util');
     window.add(menu_util);
 
-    const page = builder.get_object('menu_util');
-    const pages_stack = page.get_parent(); // AdwViewStack
-    const content_stack = pages_stack.get_parent().get_parent(); // GtkStack
-    const preferences = content_stack.get_parent(); // GtkBox
-    const headerbar = preferences.get_first_child(); // AdwHeaderBar
-    // headerbar.pack_start(builder.get_object('info_menu'));
+    let headerbar = this.find(window, 'AdwHeaderBar');
+    headerbar.pack_start(builder.get_object('info_menu'));
 
     // setup menu actions
     const actionGroup = new Gio.SimpleActionGroup();
