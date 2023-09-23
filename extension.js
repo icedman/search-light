@@ -29,6 +29,7 @@ import { Style } from './style.js';
 
 import { schemaId, SettingsKeys } from './preferences/keys.js';
 import { KeyboardShortcuts } from './keybinding.js';
+import { UnitConversionProvider } from './plugins/units/convert.js';
 
 import {
   Extension,
@@ -60,6 +61,14 @@ export default class SearchLightExt extends Extension {
 
     this._settings = this.getSettings(schemaId);
     this._settingsKeys = SettingsKeys();
+
+    this._providers = [
+      // new UnitConversionProvider()
+    ];
+
+    this._providers.forEach((p) => {
+      Main.overview.searchController.addProvider(p);
+    });
 
     this._settingsKeys.connectSettings(this._settings, (name, value) => {
       let n = name.replace(/-/g, '_');
@@ -140,10 +149,10 @@ export default class SearchLightExt extends Extension {
       this
     );
 
-    // this._loTimer.runOnce(() => {
-    //   this.show();
-    //   log('SearchLightExt: ???');
-    // }, 1500);
+    this._loTimer.runOnce(() => {
+      this.show();
+      log('SearchLightExt: ???');
+    }, 1500);
   }
 
   disable() {
@@ -166,6 +175,11 @@ export default class SearchLightExt extends Extension {
       delete this.accel;
       this.accel = null;
     }
+
+    this._providers.forEach((p) => {
+      Main.overview.searchController.removeProvider(p);
+    });
+    this._providers = [];
   }
 
   _setupBackground() {

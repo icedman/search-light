@@ -1,10 +1,10 @@
 'use strict';
 
-const { Gio, GLib, GObject, St } = imports.gi;
+import Gio from 'gi://Gio';
+import St from 'gi://St';
+import Metric from './metric.js';
 
-const ExtensionUtils = imports.misc.extensionUtils;
-const Me = ExtensionUtils.getCurrentExtension();
-const metric = Me.imports.plugins.units.metric.Metric;
+const metric = Metric();
 
 function ucfirst(string) {
   return string.charAt(0).toUpperCase() + string.slice(1);
@@ -32,6 +32,21 @@ function get_unit(m) {
 
 const p = /([0-9\.]*)\s{0,4}([a-z]*)\s{0,4}(to){0,1}\s{0,4}([a-z]*)/;
 
+function toCamelCase(phrase) {
+  // Split the phrase by spaces
+  const words = phrase.split(' ');
+
+  // Capitalize the first letter of each word after the first one
+  for (let i = 1; i < words.length; i++) {
+    words[i] = words[i].charAt(0).toUpperCase() + words[i].slice(1);
+  }
+
+  // Join the words to form the camel case string
+  const camelCaseString = words.join('');
+
+  return camelCaseString;
+}
+
 function parse_and_convert(q) {
   try {
     let res = p.exec(q);
@@ -39,19 +54,21 @@ function parse_and_convert(q) {
     let unitFrom = get_unit(res[2]);
     let unitTo = get_unit(res[res.length - 1]);
     if (value && unitFrom && unitTo) {
-      // log(value);
-      // log(unitFrom);
-      // log(unitTo);
+      // console.log(value);
+      // console.log(unitFrom);
+      // console.log(unitTo);
       let hasDecimals = res[1].indexOf('.') != -1;
+      let unitFromName = toCamelCase(unitFrom.name);
       let converter =
-        metric[unitFrom.name] ||
-        metric[`${unitFrom.name}s`] ||
-        metric[`${unitFrom.name}es`];
+        metric[unitFromName] ||
+        metric[`${unitFromName}s`] ||
+        metric[`${unitFromName}es`];
       if (converter) {
         converter = converter.bind(metric);
         let convertFrom = converter(value);
+        let unitToName = toCamelCase(unitTo.name);
         if (convertFrom) {
-          let fn = `to${ucfirst(unitTo.name)}`;
+          let fn = `to${ucfirst(unitToName)}`;
           let convertTo =
             convertFrom[fn] || convertFrom[`${fn}s`] || convertFrom[`${fn}es`];
           if (convertTo) {
@@ -70,13 +87,16 @@ function parse_and_convert(q) {
       }
     }
   } catch (err) {
-    // log(err);
+    console.log(err);
   }
   return null;
 }
 
-var Provider = class UnitConversionProvider {
-  constructor() {}
+export const UnitConversionProvider = class {
+  constructor() {
+    let r = parse_and_convert('30 meters to inch');
+    console.log(r);
+  }
 
   // createResultObject(resultMeta) {
   //   return new St.Button({});
@@ -120,7 +140,7 @@ var Provider = class UnitConversionProvider {
       };
     });
 
-    // log(JSON.stringify(metas));
+    // console.log(JSON.stringify(metas));
     return new Promise((resolve) => resolve(metas));
   }
 
