@@ -63,6 +63,10 @@ export default class Preferences extends ExtensionPreferences {
     // let menu_util = builder.get_object('menu_util');
     // window.add(menu_util);
 
+    // let gwc = this.find(window, 'GtkWindowControls');
+    // gwc.visible = false;
+    // console.log(gwc);
+
     let headerbar = this.find(window, 'AdwHeaderBar');
     if (!headerbar) {
       return;
@@ -127,7 +131,6 @@ export default class Preferences extends ExtensionPreferences {
     this.addMenu(window, builder);
 
     // shortcuts widget
-
     let placeholder = builder.get_object('shortcut-search-placeholder');
     placeholder.append(
       new ShortcutSettingWidget(
