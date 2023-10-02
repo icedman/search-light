@@ -16,6 +16,11 @@
 
 This is a Gnome Shell extension that takes the apps search widget out of Overview. Like the macOS spotlight, or Alfred.
 
+### Notice
+
+* Gnome 45 port is ready for testing
+* Gnome 44 and prior will be under g44 branch
+
 ### Features
 
 * Popup search box
