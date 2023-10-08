@@ -9,5 +9,5 @@
   "uuid": "search-light@icedman.github.com",
   "schema-id": "org.gnome.shell.extensions.search-light",
   "gettext-domain": "search-light",
-  "version": 18
+  "version": 19
 }

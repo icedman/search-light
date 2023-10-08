@@ -75,7 +75,7 @@ export default class SearchLightExt extends Extension {
       this[n] = value;
       switch (name) {
         case 'show-panel-icon':
-          this._indicator.visible = value;
+          // this._indicator.visible = value;
           break;
         case 'blur-background':
         case 'border-radius':
