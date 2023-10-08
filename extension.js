@@ -29,7 +29,7 @@ import { Style } from './style.js';
 
 import { schemaId, SettingsKeys } from './preferences/keys.js';
 import { KeyboardShortcuts } from './keybinding.js';
-import { UnitConversionProvider } from './plugins/units/convert.js';
+// import { UnitConversionProvider } from './plugins/units/convert.js';
 
 import {
   Extension,
