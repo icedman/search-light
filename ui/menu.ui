@@ -7,6 +7,10 @@
         <attribute name="action">prefs.open-readme</attribute>
       </item>
       <item>
+        <attribute name="label" translatable="yes">Buy me a coffee</attribute>
+        <attribute name="action">prefs.open-buy-coffee</attribute>
+      </item>
+      <item>
         <attribute name="label" translatable="yes">Report a Bug</attribute>
         <attribute name="action">prefs.open-bug-report</attribute>
       </item>

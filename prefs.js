@@ -88,6 +88,10 @@ export default class Preferences extends ExtensionPreferences {
         link: 'https://github.com/icedman/search-light',
       },
       {
+        name: 'open-buy-coffee',
+        link: 'https://www.buymeacoffee.com/icedman',
+      },
+      {
         name: 'open-license',
         link: 'https://github.com/icedman/search-light/blob/master/LICENSE',
       },
