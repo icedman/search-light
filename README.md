@@ -45,7 +45,7 @@ $ make
 
 From Gnome Extensions Repository
 
-Visit [[repository](https://extensions.gnome.org/extension/5489/search-light/)](https://extensions.gnome.org/extension/5489/search-light/)
+Visit [repository](https://extensions.gnome.org/extension/5489/search-light/)
 
 ### Keybinding
 
