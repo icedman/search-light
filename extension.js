@@ -261,6 +261,8 @@ export default class SearchLightExt extends Extension {
     this.mainContainer.opacity = 255;
     this.mainContainer.show();
     this.container.show();
+
+    Meta.disable_unredirect_for_display(global.display);
   }
 
   hide() {
@@ -269,6 +271,8 @@ export default class SearchLightExt extends Extension {
     this._remove_events();
     this.mainContainer.hide();
     // this._hidePopups();
+
+    Meta.enable_unredirect_for_display(global.display);
   }
 
   _layout() {
