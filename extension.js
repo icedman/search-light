@@ -402,7 +402,9 @@ export default class SearchLightExt extends Extension {
     this._entryParent = this._entry.get_parent();
     this._entry.add_style_class_name('slc');
 
-    this._search = Main.uiGroup.find_child_by_name('searchController');
+    // this._search = Main.uiGroup.find_child_by_name('searchController');
+    this._search = Main.overview.searchController;
+
     this._search.hide();
     this._searchResults = this._search._searchResults;
     this._searchParent = this._search.get_parent();
