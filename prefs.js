@@ -140,7 +140,8 @@ export default class Preferences extends ExtensionPreferences {
       new ShortcutSettingWidget(
         builder.get_object('accelerator'),
         settings,
-        'shortcut-search'
+        'shortcut-search',
+        window
       )
     );
   }

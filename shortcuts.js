@@ -30,15 +30,17 @@ export let ShortcutSettingWidget = class extends Gtk.Button {
     );
   }
 
-  constructor(content, settings, key) {
+  constructor(content, settings, key, window) {
     super({ valign: Gtk.Align.CENTER, has_frame: false });
     this._key = key;
     this._settings = settings;
+    this.window = window;
 
     this.content = content;
     this.connect('clicked', this._onActivated.bind(this));
 
     let label = new Gtk.ShortcutLabel({ disabled_text: _('New accelerator…') });
+    this._label = label;
     this.set_child(label);
 
     this.bind_property(
@@ -53,15 +55,17 @@ export let ShortcutSettingWidget = class extends Gtk.Button {
   _onActivated(widget) {
     let ctl = new Gtk.EventControllerKey();
 
-    this._editor = new Gtk.Window({
-      title: 'Accelerator',
-      modal: true,
-      hide_on_close: true,
-      transient_for: widget.get_root(),
-      width_request: 480,
-      height_request: 320,
-      child: this.content,
-    });
+    if (!this._editor) {
+      this._editor = new Gtk.Window({
+        title: 'Accelerator',
+        modal: true,
+        hide_on_close: true,
+        transient_for: widget.get_root(),
+        width_request: 480,
+        height_request: 320,
+        child: this.content,
+      });
+    }
 
     this._editor.add_controller(ctl);
     ctl.connect('key-pressed', this._onKeyPressed.bind(this));
@@ -85,8 +89,9 @@ export let ShortcutSettingWidget = class extends Gtk.Button {
     if (
       !this.isValidBinding(mask, keycode, keyval) ||
       !this.isValidAccel(mask, keyval)
-    )
+    ) {
       return Gdk.EVENT_STOP;
+    }
 
     this.saveShortcut(keyval, keycode, mask);
     return Gdk.EVENT_STOP;
@@ -104,9 +109,12 @@ export let ShortcutSettingWidget = class extends Gtk.Button {
       );
     }
 
+    console.log('saved new shortcut');
+
     this.emit('changed', this.shortcut);
     this._settings.set_strv(this._key, [this.shortcut]);
-    this._editor.destroy();
+    // this._editor.destroy();
+    this._editor.close();
   }
 
   // Functions from https://gitlab.gnome.org/GNOME/gnome-control-center/-/blob/main/panels/keyboard/keyboard-shortcuts.c

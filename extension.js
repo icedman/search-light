@@ -82,7 +82,7 @@ export default class SearchLightExt extends Extension {
           // this._setupCorners();
           break;
         case 'shortcut-search':
-          // this._updateShortcut();
+          this._updateShortcut();
           break;
       }
     });
