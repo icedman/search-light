@@ -46,6 +46,11 @@
         <summary>Shortcut</summary>
         <description>Keyboard shortcut for search</description>
     </key>
+    <key type="as" name="secondary-shortcut-search">
+        <default><![CDATA[[]]]></default>
+        <summary>Shortcut</summary>
+        <description>Keyboard shortcut for search</description>
+    </key>
     <key type="b" name="popup-at-cursor-monitor">
         <default>false</default>
         <summary>Popup at Cursor</summary>

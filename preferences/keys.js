@@ -42,6 +42,10 @@ export let SettingsKeys = function () {
       default_value: '',
       widget_type: 'string',
     },
+    'secondary-shortcut-search': {
+      default_value: [],
+      widget_type: 'shortcut',
+    },
     'shortcut-search': {
       default_value: [],
       widget_type: 'shortcut',

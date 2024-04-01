@@ -23,6 +23,21 @@
             </child>
           </object>
         </child>
+        <child>
+          <object class="AdwActionRow" id="secondary-key-binding-text">
+            <property name="title" translatable="yes">Secondary Accelerator</property>
+            <property name="subtitle" translatable="yes">Set another shortcut. Backspace to clear.
+            </property>
+            <child>
+              <object class="GtkBox" id="secondary-shortcut-search-placeholder">
+                <property name="margin-start">6</property>
+                <property name="margin-end">6</property>
+                <property name="margin-top">6</property>
+                <property name="margin-bottom">6</property>
+              </object>
+            </child>
+          </object>
+        </child>
       </object>
     </child>
     <child>

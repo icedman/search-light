@@ -135,14 +135,30 @@ export default class Preferences extends ExtensionPreferences {
     this.addMenu(window, builder);
 
     // shortcuts widget
-    let placeholder = builder.get_object('shortcut-search-placeholder');
-    placeholder.append(
-      new ShortcutSettingWidget(
-        builder.get_object('accelerator'),
-        settings,
-        'shortcut-search',
-        window
-      )
-    );
+    {
+      let placeholder = builder.get_object('shortcut-search-placeholder');
+      placeholder.append(
+        new ShortcutSettingWidget(
+          builder.get_object('accelerator'),
+          settings,
+          'shortcut-search',
+          window
+        )
+      );
+    }
+
+    {
+      let placeholder = builder.get_object(
+        'secondary-shortcut-search-placeholder'
+      );
+      placeholder.append(
+        new ShortcutSettingWidget(
+          builder.get_object('accelerator'),
+          settings,
+          'secondary-shortcut-search',
+          window
+        )
+      );
+    }
   }
 }

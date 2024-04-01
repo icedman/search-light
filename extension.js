@@ -84,6 +84,9 @@ export default class SearchLightExt extends Extension {
         case 'shortcut-search':
           this._updateShortcut();
           break;
+        case 'secondary-shortcut-search':
+          this._updateShortcut2();
+          break;
       }
     });
     Object.keys(this._settingsKeys._keys).forEach((k) => {
@@ -119,8 +122,11 @@ export default class SearchLightExt extends Extension {
 
     this.accel = new KeyboardShortcuts();
     this.accel.enable();
+    this.accel2 = new KeyboardShortcuts();
+    this.accel2.enable();
 
     this._updateShortcut();
+    this._updateShortcut2();
     this._updateCss();
 
     Main.overview.connectObject(
@@ -176,6 +182,11 @@ export default class SearchLightExt extends Extension {
       this.accel.disable();
       delete this.accel;
       this.accel = null;
+    }
+    if (this.accel2) {
+      this.accel2.disable();
+      delete this.accel2;
+      this.accel2 = null;
     }
 
     this._providers.forEach((p) => {
@@ -342,6 +353,24 @@ export default class SearchLightExt extends Extension {
 
     if (!disable) {
       this.accel.listenFor(shortcut, this._toggle_search_light.bind(this));
+    }
+  }
+
+  _updateShortcut2(disable) {
+    this.accel2.unlisten();
+
+    let shortcut = '';
+    try {
+      shortcut = (this.secondary_shortcut_search || []).join('');
+    } catch (err) {
+      //
+    }
+    if (shortcut == '') {
+      shortcut = '<Control><Super>Space';
+    }
+
+    if (!disable) {
+      this.accel2.listenFor(shortcut, this._toggle_search_light.bind(this));
     }
   }
 
