@@ -25,7 +25,7 @@ export const KeyboardShortcuts = class {
   listenFor(accelerator, callback) {
     let action = global.display.grab_accelerator(accelerator, 0);
     if (action == Meta.KeyBindingAction.NONE) {
-      log(`Unable to grab accelerator ${accelerator}`);
+      console.log(`Unable to grab accelerator ${accelerator}`);
       return;
     }
 
@@ -38,7 +38,7 @@ export const KeyboardShortcuts = class {
       callback: callback,
     };
 
-    log(`Grabbed ${accelerator}`);
+    console.log(`Grabbed ${accelerator}`);
   }
 
   unlisten() {
@@ -58,7 +58,7 @@ export const KeyboardShortcuts = class {
     if (grabber) {
       grabber.callback();
     } else {
-      log(`No listeners ${action}`);
+      console.log(`No listeners ${action}`);
     }
   }
 };

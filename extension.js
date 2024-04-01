@@ -82,7 +82,7 @@ export default class SearchLightExt extends Extension {
           // this._setupCorners();
           break;
         case 'shortcut-search':
-          // this._updateShortcut();
+          this._updateShortcut();
           break;
       }
     });
@@ -407,6 +407,7 @@ export default class SearchLightExt extends Extension {
     this._entry.add_style_class_name('slc');
 
     this._search = Main.overview.searchController;
+
     this._search.hide();
     this._searchResults = this._search._searchResults;
     this._searchParent = this._search.get_parent();
