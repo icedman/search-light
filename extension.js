@@ -153,6 +153,8 @@ export default class SearchLightExt extends Extension {
     //   this.show();
     //   log('SearchLightExt: ???');
     // }, 1500);
+
+    Main.overview.searchLight = this;
   }
 
   disable() {
