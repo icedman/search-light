@@ -118,6 +118,10 @@ def dump(f):
                 l = l.replace("let ", "var ");
             l = l.replace("export ", "")
 
+            # uncomment disabling for providers
+            if "providers-group" in l:
+                l = l.replace("//", "")
+
         if commentOut:
             output.write("//")
 

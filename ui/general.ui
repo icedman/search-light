@@ -72,7 +72,7 @@
       </object>
     </child>
     <child>
-      <object class="AdwPreferencesGroup">
+      <object class="AdwPreferencesGroup" id="providers-group">
         <property name="title" translatable="yes">Providers</property>
         <property name="description" translatable="yes"/>
         <child>

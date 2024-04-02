@@ -119,6 +119,8 @@ export default class Preferences extends ExtensionPreferences {
     window.add(builder.get_object('appearance'));
     window.set_search_enabled(true);
 
+    // builder.get_object("providers-group").visible = false;
+
     let settings = this.getSettings(schemaId);
     let settingsKeys = SettingsKeys();
     settingsKeys.connectBuilder(builder);

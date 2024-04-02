@@ -166,6 +166,10 @@ export default class SearchLightExt extends Extension {
 
     Main.overview.searchLight = this;
 
+    this._unitConversion = new UnitConversionProvider();
+    this._currencyConversion = new CurrencyConversionProvider();
+    let _providers = [this._unitConversion, this._currencyConversion];
+
     // deferred startup for providers
     let idx = 0;
     this._providers.forEach((p) => {
@@ -213,26 +217,30 @@ export default class SearchLightExt extends Extension {
     );
 
     if (this.unit_converter) {
-      this._providers.push(new UnitConversionProvider());
+      this._providers.push(this._unitConversion);
     }
-
     if (this.currency_converter) {
-      this._providers.push(new CurrencyConversionProvider());
+      this._providers.push(this._currencyConversion);
     }
 
-    this._providers.forEach((p) => {
-      p.appInfo = appInfo;
-      Main.overview.searchController.addProvider(p);
-    });
+    if (this._search && this._search.addProvider) {
+      this._providers.forEach((p) => {
+        p.appInfo = appInfo;
+        this._search.addProvider(p);
+      });
+    }
   }
 
   _removeProviders() {
     if (!this._providers) {
       return;
     }
-    this._providers.forEach((p) => {
-      Main.overview.searchController.removeProvider(p);
-    });
+
+    if (this._search && this._search.removeProvider) {
+      this._providers.forEach((p) => {
+        this._search.removeProvider(p);
+      });
+    }
     this._providers = [];
   }
 
@@ -486,11 +494,12 @@ export default class SearchLightExt extends Extension {
     this._entry.add_style_class_name('slc');
 
     this._search = Main.overview.searchController;
-
     // gnome 44 and prior
-    if (!this._search && Main.uiGroup.find_child_by_name) {
+    if (!Main.overview.searchController && Main.uiGroup.find_child_by_name) {
       this._search = Main.uiGroup.find_child_by_name("searchController");
+    } else {
     }
+    this._updateProviders();
 
     this._search.hide();
     this._searchResults = this._search._searchResults;
@@ -544,6 +553,7 @@ export default class SearchLightExt extends Extension {
     }
 
     if (this._search) {
+      this._removeProviders();
       this._search.hide();
       this._search.get_parent().remove_child(this._search);
       this._searchParent.add_child(this._search);
