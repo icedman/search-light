@@ -50,7 +50,8 @@ Visit [repository](https://extensions.gnome.org/extension/5489/search-light/)
 
 ### Keybinding
 
-ctrl+cmd+space (change at the preference page)
+Ctrl+Cmd+Space (change at the preference page)
+Cmd - your Windows logo, or the command logo on mac. Linux also calls this the 'Super' key.
 
 ### Credits
 

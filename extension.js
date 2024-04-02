@@ -118,7 +118,8 @@ export default class SearchLightExt extends Extension {
     });
 
     this.mainContainer.add_child(this.container);
-    this._setupBackground();
+    
+    // this._setupBackground();
 
     this.accel = new KeyboardShortcuts();
     this.accel.enable();
@@ -155,10 +156,10 @@ export default class SearchLightExt extends Extension {
       this
     );
 
-    // this._loTimer.runOnce(() => {
-    //   this.show();
-    //   log('SearchLightExt: ???');
-    // }, 1500);
+    this._loTimer.runOnce(() => {
+      this.show();
+      // console.log('SearchLightExt: ???');
+    }, 500);
 
     Main.overview.searchLight = this;
   }
@@ -258,22 +259,25 @@ export default class SearchLightExt extends Extension {
 
     this._acquire_ui();
 
-    let background = Main.layoutManager._backgroundGroup.get_child_at_index(0);
-    this._bgActor.set_content(background.get_content());
+    if (this._bgActor) {
+      let background = Main.layoutManager._backgroundGroup.get_child_at_index(0);
+      this._bgActor.set_content(background.get_content());
+    }
 
-    // this._setupCorners();
+    this.mainContainer.opacity = 0;
     this._updateCss();
     this._layout();
+    this.mainContainer.show();
+    this.container.show();
 
-    // this._hiTimer.runOnce(() => {
-    //   this._layout();
-    // }, 10);
+    // fixes the background size relative to text - after adjusting font size
+    this._hiTimer.runOnce(() => {
+      this.mainContainer.opacity = 255;
+      this._layout();
+    }, 100);
 
     this._add_events();
 
-    this.mainContainer.opacity = 255;
-    this.mainContainer.show();
-    this.container.show();
 
     Meta.disable_unredirect_for_display(global.display);
   }
@@ -306,16 +310,19 @@ export default class SearchLightExt extends Extension {
       font_size = this.entry_font_size_options[this.entry_font_size];
     }
 
-    let padding = {
-      14: 14 * 2.5,
-      16: 16 * 2.4,
-      18: 18 * 2.2,
-      20: 20 * 2.0,
-      22: 22 * 1.8,
-      24: 24 * 1.6,
-    };
-    this.initial_height = padding[font_size] * this.scaleFactor;
-    this.initial_height += font_size * 2 * this.scaleFactor;
+    // let padding = {
+    //   14: 14 * 2.5,
+    //   16: 16 * 2.4,
+    //   18: 18 * 2.2,
+    //   20: 20 * 2.0,
+    //   22: 22 * 1.8,
+    //   24: 24 * 1.6,
+    // };
+    // this.initial_height = padding[font_size] * this.scaleFactor;
+    // this.initial_height += font_size * 2 * this.scaleFactor;
+    // console.log(`${this.initial_height} ${this._entry.height}`);
+
+    this.initial_height = this._entry.height;
 
     // position
     let x = this.monitor.x + this.sw / 2 - this.width / 2;
@@ -328,6 +335,7 @@ export default class SearchLightExt extends Extension {
 
     // background
     if (this._background) {
+      console.log(this._entry.height);
       this._bgActor.set_position(this.monitor.x - x, this.monitor.y - y);
       this._bgActor.set_size(this.monitor.width, this.monitor.height);
       this._bgActor
@@ -534,8 +542,10 @@ export default class SearchLightExt extends Extension {
     }
 
     // blurred backgrounds!
-    this._background.visible = this.blur_background;
-    this._background.opacity = 255;
+    if (this._background) {
+      this._background.visible = this.blur_background;
+      this._background.opacity = 255;
+    }
     // this._blurEffect.brightness = this.blur_brightness;
     // this._blurEffect.sigma = this.blur_sigma;
     // this._shapeEffect.color = this.background_color;
