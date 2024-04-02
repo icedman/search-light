@@ -71,7 +71,37 @@
         </child>
       </object>
     </child>
-    <!--
+    <child>
+      <object class="AdwPreferencesGroup">
+        <property name="title" translatable="yes">Providers</property>
+        <property name="description" translatable="yes"/>
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Currency Conversion</property>
+            <property name="subtitle" translatable="yes">Enable currency conversion provider.</property>
+            <property name="activatable-widget">currency-converter</property>
+            <child>
+              <object class="GtkSwitch" id="currency-converter">
+                <property name="valign">center</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Unit Conversion</property>
+            <property name="subtitle" translatable="yes">Enable unit conversion provider.</property>
+            <property name="activatable-widget">unit-converter</property>
+            <child>
+              <object class="GtkSwitch" id="unit-converter">
+                <property name="valign">center</property>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
+    <!--     
     <child>
       <object class="AdwPreferencesGroup">
         <property name="title" translatable="yes"/>

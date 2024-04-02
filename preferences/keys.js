@@ -88,6 +88,14 @@ export let SettingsKeys = function () {
       default_value: false,
       widget_type: 'switch',
     },
+    'unit-converter': {
+      default_value: false,
+      widget_type: 'switch',
+    },
+    'currency-converter': {
+      default_value: false,
+      widget_type: 'switch',
+    },
   });
 
   return settingsKeys;

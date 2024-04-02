@@ -102,5 +102,15 @@
         <summary>Show panel icon</summary>
         <description></description>
     </key>
+    <key type="b" name="unit-converter">
+        <default>false</default>
+        <summary>Show unit converter</summary>
+        <description></description>
+    </key>
+    <key type="b" name="currency-converter">
+        <default>false</default>
+        <summary>Show currency converter</summary>
+        <description></description>
+    </key>
   </schema>
 </schemalist>

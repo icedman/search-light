@@ -23,13 +23,15 @@ import Shell from 'gi://Shell';
 import GObject from 'gi://GObject';
 import Clutter from 'gi://Clutter';
 import St from 'gi://St';
+import Soup from 'gi://Soup';
 
 import { Timer } from './timer.js';
 import { Style } from './style.js';
 
 import { schemaId, SettingsKeys } from './preferences/keys.js';
 import { KeyboardShortcuts } from './keybinding.js';
-// import { UnitConversionProvider } from './plugins/units/convert.js';
+import { UnitConversionProvider } from './plugins/units/units.js';
+import { CurrencyConversionProvider } from './plugins/currency/currency.js';
 
 import {
   Extension,
@@ -50,6 +52,8 @@ var SearchLight = GObject.registerClass(
 
 export default class SearchLightExt extends Extension {
   enable() {
+    Main.overview.soup = Soup;
+
     this._style = new Style();
 
     this._hiTimer = new Timer('hi-res timer');
@@ -62,20 +66,16 @@ export default class SearchLightExt extends Extension {
     this._settings = this.getSettings(schemaId);
     this._settingsKeys = SettingsKeys();
 
-    this._providers = [
-      // new UnitConversionProvider()
-    ];
-
-    this._providers.forEach((p) => {
-      Main.overview.searchController.addProvider(p);
-    });
-
     this._settingsKeys.connectSettings(this._settings, (name, value) => {
       let n = name.replace(/-/g, '_');
       this[n] = value;
       switch (name) {
         case 'show-panel-icon':
           // this._indicator.visible = value;
+          break;
+        case 'unit-converter':
+        case 'currency-converter':
+          this._updateProviders();
           break;
         case 'blur-background':
         case 'border-radius':
@@ -118,7 +118,7 @@ export default class SearchLightExt extends Extension {
     });
 
     this.mainContainer.add_child(this.container);
-    
+
     // this._setupBackground();
 
     this.accel = new KeyboardShortcuts();
@@ -129,6 +129,8 @@ export default class SearchLightExt extends Extension {
     this._updateShortcut();
     this._updateShortcut2();
     this._updateCss();
+
+    this._updateProviders();
 
     Main.overview.connectObject(
       'overview-showing',
@@ -162,6 +164,14 @@ export default class SearchLightExt extends Extension {
     }, 500);
 
     Main.overview.searchLight = this;
+
+    // deferred startup for providers
+    let idx = 0;
+    this._providers.forEach((p) => {
+      this._loTimer.runOnce(() => {
+        p.initialize();
+      }, idx * 5000);
+    });
   }
 
   disable() {
@@ -190,6 +200,29 @@ export default class SearchLightExt extends Extension {
       this.accel2 = null;
     }
 
+    this._removeProviders();
+  }
+
+  _updateProviders() {
+    this._removeProviders();
+    this._providers = [];
+    if (this.unit_converter) {
+      this._providers.push(new UnitConversionProvider());
+    }
+
+    if (this.currency_converter) {
+      this._providers.push(new CurrencyConversionProvider());
+    }
+
+    this._providers.forEach((p) => {
+      Main.overview.searchController.addProvider(p);
+    });
+  }
+
+  _removeProviders() {
+    if (!this._providers) {
+      return;
+    }
     this._providers.forEach((p) => {
       Main.overview.searchController.removeProvider(p);
     });
@@ -260,7 +293,8 @@ export default class SearchLightExt extends Extension {
     this._acquire_ui();
 
     if (this._bgActor) {
-      let background = Main.layoutManager._backgroundGroup.get_child_at_index(0);
+      let background =
+        Main.layoutManager._backgroundGroup.get_child_at_index(0);
       this._bgActor.set_content(background.get_content());
     }
 
@@ -277,7 +311,6 @@ export default class SearchLightExt extends Extension {
     }, 100);
 
     this._add_events();
-
 
     Meta.disable_unredirect_for_display(global.display);
   }

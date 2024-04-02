@@ -9,6 +9,7 @@ import { ShortcutSettingWidget } from './shortcuts.js';
 const GETTEXT_DOMAIN = 'search-light';
 
 import { schemaId, SettingsKeys } from './preferences/keys.js';
+import { MonitorsConfig } from './monitors.js';
 
 import {
   ExtensionPreferences,
@@ -22,13 +23,6 @@ export default class Preferences extends ExtensionPreferences {
     let UIFolderPath = `${this.path}/ui`;
     iconTheme.add_search_path(`${UIFolderPath}/icons`);
     // ExtensionUtils.initTranslations(GETTEXT_DOMAIN);
-  }
-
-  updateMonitors(window, builder, settings) {
-    // monitors
-    let count = settings.get_int('monitor-count') || 1;
-    const monitors_model = builder.get_object('preferred-monitor-model');
-    monitors_model.splice(count, 6 - count, []);
   }
 
   find(n, name) {
@@ -131,8 +125,10 @@ export default class Preferences extends ExtensionPreferences {
     settingsKeys.connectSettings(settings);
 
     this.addButtonEvents(window, builder, settings);
-    this.updateMonitors(window, builder, settings);
     this.addMenu(window, builder);
+
+    this._monitorsConfig = new MonitorsConfig();
+    this._monitorsConfig.connect('updated', () => this.updateMonitors());
 
     // shortcuts widget
     {
@@ -160,5 +156,20 @@ export default class Preferences extends ExtensionPreferences {
         )
       );
     }
+
+    this._builder = builder;
+    this.updateMonitors();
+  }
+
+  updateMonitors() {
+    let monitors = this._monitorsConfig.monitors;
+    let count = monitors.length;
+    let list = new Gtk.StringList();
+    list.append('Primary Monitor');
+    for (let i = 0; i < count; i++) {
+      let m = monitors[i];
+      list.append(m.displayName);
+    }
+    this._builder.get_object('preferred-monitor').set_model(list);
   }
 }
