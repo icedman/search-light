@@ -487,6 +487,11 @@ export default class SearchLightExt extends Extension {
 
     this._search = Main.overview.searchController;
 
+    // gnome 44 and prior
+    if (!this._search && Main.uiGroup.find_child_by_name) {
+      this._search = Main.uiGroup.find_child_by_name("searchController");
+    }
+
     this._search.hide();
     this._searchResults = this._search._searchResults;
     this._searchParent = this._search.get_parent();
