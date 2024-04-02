@@ -19,6 +19,7 @@ publish:
 	cp -r ui ./build
 	cp -r preferences ./build
 	cp -r effects ./build
+	cp -r apps ./build
 	cp README.md ./build
 	cp CHANGELOG.md ./build
 	cp -R schemas ./build

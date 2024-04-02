@@ -20,6 +20,7 @@
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import Meta from 'gi://Meta';
 import Shell from 'gi://Shell';
+import Gio from 'gi://Gio';
 import GObject from 'gi://GObject';
 import Clutter from 'gi://Clutter';
 import St from 'gi://St';
@@ -206,6 +207,11 @@ export default class SearchLightExt extends Extension {
   _updateProviders() {
     this._removeProviders();
     this._providers = [];
+
+    let appInfo = Gio.DesktopAppInfo.new_from_filename(
+      `${this.path}/apps/org.gnome.Calculator.desktop`
+    );
+
     if (this.unit_converter) {
       this._providers.push(new UnitConversionProvider());
     }
@@ -215,6 +221,7 @@ export default class SearchLightExt extends Extension {
     }
 
     this._providers.forEach((p) => {
+      p.appInfo = appInfo;
       Main.overview.searchController.addProvider(p);
     });
   }
@@ -355,7 +362,7 @@ export default class SearchLightExt extends Extension {
     // this.initial_height += font_size * 2 * this.scaleFactor;
     // console.log(`${this.initial_height} ${this._entry.height}`);
 
-    this.initial_height = this._entry.height;
+    this.initial_height = this._entry.height + 4 * this.scaleFactor;
 
     // position
     let x = this.monitor.x + this.sw / 2 - this.width / 2;
