@@ -4,12 +4,12 @@ import Gio from 'gi://Gio';
 import St from 'gi://St';
 import { trySpawnCommandLine } from 'resource:///org/gnome/shell/misc/util.js';
 
-import Metric from './metric.js';
+import { NewMetric } from './metric.js';
 
 const providerIcon = 'accessories-calculator';
 // const providerIcon = 'org.gnome.Terminal';
 
-const metric = Metric();
+const metric = NewMetric();
 
 function ucfirst(string) {
   return string.charAt(0).toUpperCase() + string.slice(1);

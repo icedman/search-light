@@ -2,9 +2,9 @@
 
 import { PrefKeys } from './prefKeys.js';
 
-export let schemaId = 'org.gnome.shell.extensions.search-light';
+export const schemaId = 'org.gnome.shell.extensions.search-light';
 
-export let SettingsKeys = function () {
+export const SettingsKeys = () => {
   let settingsKeys = new PrefKeys();
 
   settingsKeys.setKeys({

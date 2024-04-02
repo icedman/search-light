@@ -38,6 +38,42 @@ install-zip: publish
 	mkdir -p ~/.local/share/gnome-shell/extensions/search-light@icedman.github.com/
 	unzip -q search-light@icedman.github.com.zip -d ~/.local/share/gnome-shell/extensions/search-light@icedman.github.com/
 
+g44: build
+	rm -rf ./build
+	mkdir -p ./build
+	mkdir -p ./build/apps
+	mkdir -p ./build/effects
+	mkdir -p ./build/preferences
+	mkdir -p ./build/plugins/currency
+	mkdir -p ./build/plugins/units
+	python3 ./transpile.py
+	rm -rf ~/.local/share/gnome-shell/extensions/search-light@icedman.github.com/
+	mkdir -p ~/.local/share/gnome-shell/extensions/search-light@icedman.github.com/
+	cp -R ./schemas ./build
+	cp -R ./ui ./build
+	cp ./apps/*.desktop ./build/apps
+	# cp ./effects/*.glsl ./build/effects
+	cp ./LICENSE* ./build
+	cp ./CHANGELOG* ./build
+	cp ./README* ./build
+	cp ./stylesheet.css ./build
+	cp -r ./build/* ~/.local/share/gnome-shell/extensions/search-light@icedman.github.com/
+
+publish-g44: g44
+	echo "publishing..."
+	cd build ; \
+	zip -qr ../search-light@icedman.github.com.zip .
+
+test-prefs-g44: g44
+	gnome-extensions prefs search-light@icedman.github.com
+
+test-shell-g44: g44
+	env GNOME_SHELL_SLOWDOWN_FACTOR=2 \
+		MUTTER_DEBUG_DUMMY_MODE_SPECS=1200x800 \
+	 	MUTTER_DEBUG_DUMMY_MONITOR_SCALES=1 \
+		dbus-run-session -- gnome-shell --nested --wayland
+	rm /run/user/1000/gnome-shell-disable-extensions
+
 test-prefs:
 	gnome-extensions prefs search-light@icedman.github.com
 
