@@ -131,8 +131,6 @@ export default class SearchLightExt extends Extension {
     this._updateShortcut2();
     this._updateCss();
 
-    this._updateProviders();
-
     Main.overview.connectObject(
       'overview-showing',
       this._onOverviewShowing.bind(this),
@@ -159,24 +157,32 @@ export default class SearchLightExt extends Extension {
       this
     );
 
-    // this._loTimer.runOnce(() => {
-    //   this.show();
-    //   // console.log('SearchLightExt: ???');
-    // }, 500);
+    this._loTimer.runOnce(() => {
+      this.show();
+      // console.log('SearchLightExt: ???');
+    }, 500);
 
     Main.overview.searchLight = this;
 
+    let appInfo = Gio.DesktopAppInfo.new_from_filename(
+      `${this.path}/apps/org.gnome.Calculator.desktop`
+    );
+
     this._unitConversion = new UnitConversionProvider();
+    this._unitConversion.appInfo = appInfo;
     this._currencyConversion = new CurrencyConversionProvider();
+    this._currencyConversion.appInfo = appInfo;
     let _providers = [this._unitConversion, this._currencyConversion];
 
     // deferred startup for providers
     let idx = 0;
-    this._providers.forEach((p) => {
+    _providers.forEach((p) => {
       this._loTimer.runOnce(() => {
         p.initialize();
       }, idx * 5000);
     });
+
+    this._updateProviders();
   }
 
   disable() {
@@ -212,21 +218,19 @@ export default class SearchLightExt extends Extension {
     this._removeProviders();
     this._providers = [];
 
-    let appInfo = Gio.DesktopAppInfo.new_from_filename(
-      `${this.path}/apps/org.gnome.Calculator.desktop`
-    );
+    let _search = Main.overview.searchController;
+    if (!_search) return;
 
-    if (this.unit_converter) {
+    if (this.unit_converter && this._unitConversion) {
       this._providers.push(this._unitConversion);
     }
-    if (this.currency_converter) {
+    if (this.currency_converter && this._currencyConversion) {
       this._providers.push(this._currencyConversion);
     }
 
-    if (this._search && this._search.addProvider) {
+    if (_search.addProvider) {
       this._providers.forEach((p) => {
-        p.appInfo = appInfo;
-        this._search.addProvider(p);
+        _search.addProvider(p);
       });
     }
   }
@@ -236,9 +240,12 @@ export default class SearchLightExt extends Extension {
       return;
     }
 
-    if (this._search && this._search.removeProvider) {
+    let _search = Main.overview.searchController;
+    if (!_search) return;
+
+    if (_search.removeProvider) {
       this._providers.forEach((p) => {
-        this._search.removeProvider(p);
+        _search.removeProvider(p);
       });
     }
     this._providers = [];
@@ -496,10 +503,8 @@ export default class SearchLightExt extends Extension {
     this._search = Main.overview.searchController;
     // gnome 44 and prior
     if (!Main.overview.searchController && Main.uiGroup.find_child_by_name) {
-      this._search = Main.uiGroup.find_child_by_name("searchController");
-    } else {
+      this._search = Main.uiGroup.find_child_by_name('searchController');
     }
-    this._updateProviders();
 
     this._search.hide();
     this._searchResults = this._search._searchResults;

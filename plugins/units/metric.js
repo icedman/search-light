@@ -538,4 +538,4 @@ export const NewMetric = () => {
   let _Metric = new MetricConstructor();
   _Metric.version = VERSION;
   return _Metric;
-}
+};
