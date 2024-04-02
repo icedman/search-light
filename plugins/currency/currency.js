@@ -3,7 +3,7 @@
 import Soup from 'gi://Soup';
 import Gio from 'gi://Gio';
 import St from 'gi://St';
-import { ListSearchResult } from 'resource:///org/gnome/shell/ui/search.js';
+import { trySpawnCommandLine } from 'resource:///org/gnome/shell/misc/util.js';
 
 const p1 = /([a-zA-Z]*)\s{0,4}([0-9\.]*)\s{0,4}(to){0,1}\s{0,4}([a-zA-Z]*)/;
 const p2 = /([0-9\.]*)\s{0,4}([a-zA-Z]*)\s{0,4}(to){0,1}\s{0,4}([a-zA-Z]*)/;
@@ -106,6 +106,8 @@ export const CurrencyConversionProvider = class {
         St.ClipboardType.CLIPBOARD,
         meta.clipboardText
       );
+    } else {
+      trySpawnCommandLine(`gnome-calculator --equation ${meta.result}`);
     }
   }
 
@@ -123,6 +125,7 @@ export const CurrencyConversionProvider = class {
                 id: q,
                 name: `${q} = ${r.result}`,
                 description: `\n${r.value} ${r.currencyFrom} to ${r.currencyTo}`,
+                result: r.result,
                 clipboardText: `${r.result}`,
                 createIcon: (size) => {
                   let gicon = Gio.icon_new_for_string(providerIcon);

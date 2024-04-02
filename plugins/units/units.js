@@ -2,6 +2,8 @@
 
 import Gio from 'gi://Gio';
 import St from 'gi://St';
+import { trySpawnCommandLine } from 'resource:///org/gnome/shell/misc/util.js';
+
 import Metric from './metric.js';
 
 const providerIcon = 'accessories-calculator';
@@ -72,6 +74,8 @@ export const UnitConversionProvider = class {
         St.ClipboardType.CLIPBOARD,
         meta.clipboardText
       );
+    } else {
+      trySpawnCommandLine(`gnome-calculator --equation ${meta.result}`);
     }
   }
 
@@ -148,6 +152,7 @@ export const UnitConversionProvider = class {
               let meta = {
                 id: q,
                 name: `${q} = ${r.result}`,
+                result: r.result,
                 description: `\n${r.value} ${r.unitFrom.name} to ${r.unitTo.name}`,
                 createIcon: (size) => {
                   let gicon = Gio.icon_new_for_string(providerIcon);
