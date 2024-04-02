@@ -110,7 +110,6 @@ export const UnitConversionProvider = class {
                 value,
                 unitFrom,
                 unitTo,
-                to: res[res.length - 1].toUpperCase(),
                 result: res,
               };
             }
@@ -148,13 +147,16 @@ export const UnitConversionProvider = class {
               }
               let meta = {
                 id: q,
-                name: `${r.result}`,
+                name: `${q} = ${r.result}`,
                 description: `\n${r.value} ${r.unitFrom.name} to ${r.unitTo.name}`,
-                clipboardText: `${r.result}`,
                 createIcon: (size) => {
                   let gicon = Gio.icon_new_for_string(providerIcon);
                   if (gicon) {
-                    let icon = new St.Icon({ gicon, icon_size: size });
+                    let icon = new St.Icon({
+                      gicon,
+                      icon_size: 0,
+                      visible: false,
+                    });
                     return icon;
                   }
                   return null;
@@ -163,9 +165,9 @@ export const UnitConversionProvider = class {
               this._results[q] = { ...meta, clipboardText: null };
               this._results[`copy-${q}`] = {
                 ...meta,
-                name: 'copy to clipboard',
+                name: 'Copy result to clipboard',
               };
-              resolve(meta);
+              resolve(this._results[q]);
             })
             .catch((err) => {
               reject(err);

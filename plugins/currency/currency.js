@@ -121,13 +121,17 @@ export const CurrencyConversionProvider = class {
               }
               let meta = {
                 id: q,
-                name: `${r.result} ${r.currencyTo}`,
+                name: `${q} = ${r.result}`,
                 description: `\n${r.value} ${r.currencyFrom} to ${r.currencyTo}`,
                 clipboardText: `${r.result}`,
                 createIcon: (size) => {
                   let gicon = Gio.icon_new_for_string(providerIcon);
                   if (gicon) {
-                    let icon = new St.Icon({ gicon, icon_size: size });
+                    let icon = new St.Icon({
+                      gicon,
+                      icon_size: 0,
+                      visible: false,
+                    });
                     return icon;
                   }
                   return null;
@@ -136,9 +140,9 @@ export const CurrencyConversionProvider = class {
               this._results[q] = { ...meta, clipboardText: null };
               this._results[`copy-${q}`] = {
                 ...meta,
-                name: 'copy to clipboard',
+                name: 'Copy result to clipboard',
               };
-              resolve(meta);
+              resolve(this._results[q]);
             })
             .catch((err) => {
               reject(err);
