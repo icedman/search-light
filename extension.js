@@ -277,7 +277,8 @@ export default class SearchLightExt extends Extension {
       let bg = this._desktopSettings.get_string('picture-uri');
       let a = Math.floor(100 - color[3] * 100);
       let rgb = this._style.hex(color);
-      let cmd = `convert -scale 10% -blur 0x2.5 -resize 1000% -fill "${rgb}" -tint ${a} "${bg}" ${BLURRED_BG_PATH}`;
+      // let cmd = `convert -scale 10% -blur 0x2.5 -resize 1000% -fill "${rgb}" -tint ${a} "${bg}" ${BLURRED_BG_PATH}`;
+      let cmd = `convert -scale 10% -blur 0x2.5 -resize 1000% "${bg}" ${BLURRED_BG_PATH}`;
       console.log(cmd);
       trySpawnCommandLine(cmd);
     }
@@ -682,8 +683,8 @@ export default class SearchLightExt extends Extension {
     //   this._blurEffect.sigma = this.blur_sigma;
     // }
 
-    // this._background.visible = true;
-    // this._background.opacity = 200;
+    this._background.visible = true;
+    this._background.opacity = 200;
 
     let styles = [];
     {
@@ -703,6 +704,7 @@ export default class SearchLightExt extends Extension {
       }
 
       styles.push(`#searchLight {${ss.join(' ')}}`);
+      styles.push(`#searchLightBlurredBackground {${ss.join(' ')}}`);
     }
 
     // ss.push(`\n background-image: url("${bg}");`);
@@ -710,6 +712,7 @@ export default class SearchLightExt extends Extension {
       let ss = [];
       ss.push(`\n background-image: url("${BLURRED_BG_PATH}");`);
       ss.push(`\n background-position: top center;`);
+
       // styles.push(`#searchLightBlurredBackground {${ss.join(' ')}}`);
       styles.push(`#searchLight {${ss.join(' ')}}`);
     }
