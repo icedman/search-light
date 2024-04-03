@@ -96,6 +96,17 @@ export const SettingsKeys = () => {
       default_value: false,
       widget_type: 'switch',
     },
+    'window-effect': {
+      default_value: 0,
+      widget_type: 'dropdown',
+      test: { values: [0, 1, 2] },
+      themed: true,
+    },
+    'window-effect-color': {
+      default_value: [1, 1, 1, 1],
+      widget_type: 'color',
+      themed: true,
+    },
   });
 
   return settingsKeys;

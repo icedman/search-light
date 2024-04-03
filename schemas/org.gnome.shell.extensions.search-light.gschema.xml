@@ -112,5 +112,15 @@
         <summary>Show currency converter</summary>
         <description></description>
     </key>
+    <key type="i" name="window-effect">
+        <default>0</default>
+        <summary>Window effect</summary>
+        <description>Set window rendering effect.</description>
+    </key>
+    <key type="(dddd)" name="window-effect-color">
+        <default>(1.,1.,1.,1.)</default>
+        <summary>Rendering effect color</summary>
+        <description>Set the window rendering effect color.</description>
+    </key>
   </schema>
 </schemalist>

@@ -61,4 +61,14 @@ export let Style = class {
     res[3] = clr[3].toFixed(1);
     return res.join(',');
   }
+
+  hex(color) {
+    let r = Math.floor(color[0] * 255);
+    let g = Math.floor(color[1] * 255);
+    let b = Math.floor(color[2] * 255);
+    if (r.length == 1) r += r;
+    if (g.length == 1) r += r;
+    if (b.length == 1) r += r;
+    return `#${r}${g}${b}`;
+  }
 };

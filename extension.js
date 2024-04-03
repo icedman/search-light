@@ -24,10 +24,14 @@ import Gio from 'gi://Gio';
 import GObject from 'gi://GObject';
 import Clutter from 'gi://Clutter';
 import St from 'gi://St';
-import Soup from 'gi://Soup';
+import Graphene from 'gi://Graphene';
+import { trySpawnCommandLine } from 'resource:///org/gnome/shell/misc/util.js';
 
 import { Timer } from './timer.js';
 import { Style } from './style.js';
+
+import { TintEffect } from './effects/tint_effect.js';
+import { MonochromeEffect } from './effects/monochrome_effect.js';
 
 import { schemaId, SettingsKeys } from './preferences/keys.js';
 import { KeyboardShortcuts } from './keybinding.js';
@@ -51,9 +55,11 @@ var SearchLight = GObject.registerClass(
   }
 );
 
+const BLURRED_BG_PATH = '/tmp/searchlight-bg-blurred.jpg';
+
 export default class SearchLightExt extends Extension {
   enable() {
-    Main.overview.soup = Soup;
+    Main.overview.graphene = Graphene;
 
     this._style = new Style();
 
@@ -78,9 +84,11 @@ export default class SearchLightExt extends Extension {
         case 'currency-converter':
           this._updateProviders();
           break;
+        case 'background-color':
         case 'blur-background':
+          this._updateBlurredBackground();
+          break;
         case 'border-radius':
-          // this._setupCorners();
           break;
         case 'shortcut-search':
           this._updateShortcut();
@@ -88,6 +96,16 @@ export default class SearchLightExt extends Extension {
         case 'secondary-shortcut-search':
           this._updateShortcut2();
           break;
+        case 'window-effect': {
+          this._updateWindowEffect();
+          break;
+        }
+        case 'window-effect-color': {
+          if (this.windowEffect) {
+            this.windowEffect.color = this.window_effect_color;
+          }
+          break;
+        }
       }
     });
     Object.keys(this._settingsKeys._keys).forEach((k) => {
@@ -99,6 +117,17 @@ export default class SearchLightExt extends Extension {
       }
       // log(`${name} ${key.value}`);
     });
+
+    this._desktopSettings = new Gio.Settings({
+      schema_id: 'org.gnome.desktop.background',
+    });
+    this._desktopSettings.connectObject(
+      'changed::picture-uri',
+      () => {
+        this._updateBlurredBackground();
+      },
+      this
+    );
 
     this.mainContainer = new SearchLight();
     this.mainContainer._delegate = this;
@@ -120,7 +149,7 @@ export default class SearchLightExt extends Extension {
 
     this.mainContainer.add_child(this.container);
 
-    // this._setupBackground();
+    this._setupBackground();
 
     this.accel = new KeyboardShortcuts();
     this.accel.enable();
@@ -157,10 +186,10 @@ export default class SearchLightExt extends Extension {
       this
     );
 
-    // this._loTimer.runOnce(() => {
-    //   this.show();
-    //   // console.log('SearchLightExt: ???');
-    // }, 500);
+    this._loTimer.runOnce(() => {
+      // this.show();
+      // console.log('SearchLightExt: ???');
+    }, 500);
 
     Main.overview.searchLight = this;
 
@@ -183,6 +212,8 @@ export default class SearchLightExt extends Extension {
     });
 
     this._updateProviders();
+    this._updateWindowEffect();
+    this._updateBlurredBackground();
   }
 
   disable() {
@@ -200,6 +231,9 @@ export default class SearchLightExt extends Extension {
     this._settingsKeys.disconnectSettings();
     this._settings = null;
 
+    this._desktopSettings.disconnectObject();
+    this._desktopSettings = null;
+
     if (this.accel) {
       this.accel.disable();
       delete this.accel;
@@ -212,6 +246,52 @@ export default class SearchLightExt extends Extension {
     }
 
     this._removeProviders();
+  }
+
+  _createEffect(idx) {
+    let effect = null;
+    switch (idx) {
+      case 1: {
+        effect = new TintEffect({
+          name: 'color',
+          color: this.window_effect_color,
+        });
+        effect.preload(this.path);
+        break;
+      }
+      case 2: {
+        effect = new MonochromeEffect({
+          name: 'color',
+          color: this.window_effect_color,
+        });
+        effect.preload(this.path);
+        break;
+      }
+    }
+    return effect;
+  }
+
+  _updateBlurredBackground() {
+    if (this.blur_background) {
+      let color = this.background_color || [0, 0, 0, 0.5];
+      let bg = this._desktopSettings.get_string('picture-uri');
+      let a = Math.floor(100 - color[3] * 100);
+      let rgb = this._style.hex(color);
+      let cmd = `convert -scale 10% -blur 0x2.5 -resize 1000% -fill "${rgb}" -tint ${a} "${bg}" ${BLURRED_BG_PATH}`;
+      console.log(cmd);
+      trySpawnCommandLine(cmd);
+    }
+  }
+
+  _updateWindowEffect() {
+    // this.window_effect = 2;
+    // this.window_effect_color = [1, 0, 0, 0.5];
+    this.container.remove_effect_by_name('window-effect');
+    let effect = this._createEffect(this.window_effect);
+    if (effect) {
+      this.container.add_effect_with_name('window-effect', effect);
+    }
+    this.windowEffect = effect;
   }
 
   _updateProviders() {
@@ -252,25 +332,14 @@ export default class SearchLightExt extends Extension {
   }
 
   _setupBackground() {
-    // todo... needs clarity
-
-    /*
-    SearchLight (#searchLight)
-      -> container (#searchLightBox)
-      -> background (#searchLightBlurredBackground)
-          -> blurEffect
-          -> image (#searchLightBlurredBackgroundImage)
-              -> bgActor
-          -> corners
-    */
-
     if (this._background && this._background.get_parent()) {
       this._background.get_parent().remove_child(this._background);
     }
 
-    this._bgActor = new Meta.BackgroundActor();
-    let background = Main.layoutManager._backgroundGroup.get_child_at_index(0);
-    this._bgActor.set_content(background.get_content());
+    // blurred background image
+    // this._bgActor = new Meta.BackgroundActor();
+    // let bgSource = Main.layoutManager._backgroundGroup.get_child_at_index(0);
+    // this._bgActor.set_content(bgSource.get_content());
     // this._blurEffect = new Shell.BlurEffect({
     //   name: 'blur',
     //   brightness: this.blur_brightness,
@@ -278,33 +347,31 @@ export default class SearchLightExt extends Extension {
     //   mode: Shell.BlurMode.ACTOR,
     // });
 
-    // this._shapeEffect = new ShapeEffect();
-    let background_parent = new St.Widget({
+    let background = new St.Widget({
       name: 'searchLightBlurredBackground',
       layout_manager: new Clutter.BinLayout(),
       x: 0,
       y: 0,
       width: 20,
       height: 20,
-      // effect: this._shapeEffect,
     });
 
-    let image = new St.Widget({
-      name: 'searchLightBlurredBackgroundImage',
-      x: 0,
-      y: 0,
-      width: 20,
-      height: 20,
-      // effect: this._blurEffect,
-    });
+    // let image = new St.Widget({
+    //   name: 'searchLightBlurredBackgroundImage',
+    //   x: 0,
+    //   y: 0,
+    //   width: 20,
+    //   height: 20,
+    //   effect: this._blurEffect,
+    // });
 
-    image.add_child(this._bgActor);
-    background_parent.add_child(image);
-    this._bgActor.clip_to_allocation = true;
-    this._bgActor.offscreen_redirect = Clutter.OffscreenRedirect.ALWAYS;
+    // image.add_child(this._bgActor);
+    // background.add_child(image);
+    // this._bgActor.clip_to_allocation = true;
+    // this._bgActor.offscreen_redirect = Clutter.OffscreenRedirect.ALWAYS;
 
-    this.mainContainer.insert_child_below(background_parent, this.container);
-    this._background = background_parent;
+    this.mainContainer.insert_child_below(background, this.container);
+    this._background = background;
     this._background.opacity = 0;
     this._background.visible = false;
   }
@@ -315,9 +382,8 @@ export default class SearchLightExt extends Extension {
     this._acquire_ui();
 
     if (this._bgActor) {
-      let background =
-        Main.layoutManager._backgroundGroup.get_child_at_index(0);
-      this._bgActor.set_content(background.get_content());
+      let bgSource = Main.layoutManager._backgroundGroup.get_child_at_index(0);
+      this._bgActor.set_content(bgSource.get_content());
     }
 
     this.mainContainer.opacity = 0;
@@ -390,14 +456,19 @@ export default class SearchLightExt extends Extension {
 
     // background
     if (this._background) {
-      console.log(this._entry.height);
-      this._bgActor.set_position(this.monitor.x - x, this.monitor.y - y);
-      this._bgActor.set_size(this.monitor.width, this.monitor.height);
-      this._bgActor
-        .get_parent()
-        .set_size(this.monitor.width, this.monitor.height);
-      this._background.set_position(0, 0);
-      this._background.set_size(this.monitor.width, this.monitor.height);
+      if (this._bgActor) {
+        this._bgActor.set_position(this.monitor.x - x, this.monitor.y - y);
+        this._bgActor.set_size(this.monitor.width, this.monitor.height);
+        this._bgActor
+          .get_parent()
+          .set_size(this.monitor.width, this.monitor.height);
+      }
+      let padding = 0; //this.border_thickness || 0;
+      this._background.set_position(padding, padding);
+      this._background.set_size(
+        this.monitor.width - padding * 2,
+        this.monitor.height - padding * 2
+      );
     }
   }
 
@@ -602,13 +673,17 @@ export default class SearchLightExt extends Extension {
     }
 
     // blurred backgrounds!
-    if (this._background) {
-      this._background.visible = this.blur_background;
-      this._background.opacity = 255;
-    }
-    // this._blurEffect.brightness = this.blur_brightness;
-    // this._blurEffect.sigma = this.blur_sigma;
-    // this._shapeEffect.color = this.background_color;
+    // if (this._background) {
+    //   this._background.visible = this.blur_background;
+    //   this._background.opacity = 255;
+    // }
+    // if (this._blurEffect) {
+    //   this._blurEffect.brightness = this.blur_brightness;
+    //   this._blurEffect.sigma = this.blur_sigma;
+    // }
+
+    // this._background.visible = true;
+    // this._background.opacity = 200;
 
     let styles = [];
     {
@@ -626,6 +701,16 @@ export default class SearchLightExt extends Extension {
         let clr = this._style.rgba(this.border_color);
         ss.push(`\n  border: ${this.border_thickness}px solid rgba(${clr});`);
       }
+
+      styles.push(`#searchLight {${ss.join(' ')}}`);
+    }
+
+    // ss.push(`\n background-image: url("${bg}");`);
+    if (this.blur_background) {
+      let ss = [];
+      ss.push(`\n background-image: url("${BLURRED_BG_PATH}");`);
+      ss.push(`\n background-position: top center;`);
+      // styles.push(`#searchLightBlurredBackground {${ss.join(' ')}}`);
       styles.push(`#searchLight {${ss.join(' ')}}`);
     }
 
