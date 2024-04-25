@@ -100,8 +100,7 @@
           </object>
         </child>
       </object>
-    </child>
-    <!--     
+    </child> 
     <child>
       <object class="AdwPreferencesGroup">
         <property name="title" translatable="yes"/>
@@ -120,7 +119,6 @@
         </child>
       </object>
     </child>
-    -->
   </object>
   <object class="GtkStringList" id="preferred-monitor-model">
     <items>

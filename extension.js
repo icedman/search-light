@@ -78,7 +78,9 @@ export default class SearchLightExt extends Extension {
       this[n] = value;
       switch (name) {
         case 'show-panel-icon':
-          // this._indicator.visible = value;
+          if (this._indicator) {
+            this._indicator.visible = value;
+          }
           break;
         case 'unit-converter':
         case 'currency-converter':
@@ -211,6 +213,16 @@ export default class SearchLightExt extends Extension {
       }, idx * 5000);
     });
 
+    {
+      this._indicator = new St.Button({style_class: 'panel-status-indicators-box'});
+      let icon = new St.Icon({gicon: new Gio.ThemedIcon({name: 'search-symbolic'})});
+      icon.style = 'margin-top: 4px !important; margin-bottom: 4px !important;';
+      this._indicator.add_child(icon);
+      this._indicator.visible = this.show_panel_icon;
+      this._indicator.connect('button-press-event', this._toggle_search_light.bind(this));
+      Main.panel._rightBox.insert_child_at_index(this._indicator, 0);
+    }
+
     this._updateProviders();
     this._updateWindowEffect();
     this._updateBlurredBackground();
@@ -222,8 +234,13 @@ export default class SearchLightExt extends Extension {
     this._hiTimer = null;
     this._loTimer = null;
 
-    // this._indicator.destroy();
-    // this._indicator = null;
+    if (this._indicator) {
+      if (this._indicator.get_parent()) {
+        this._indicator.get_parent().remove_child(this._indicator);
+      }
+      this._indicator.destroy();
+      this._indicator = null;
+    }
 
     this._style.unloadAll();
     this._style = null;
@@ -293,6 +310,10 @@ export default class SearchLightExt extends Extension {
       this.container.add_effect_with_name('window-effect', effect);
     }
     this.windowEffect = effect;
+  }
+
+  _updatePanelIcon(disable) {
+
   }
 
   _updateProviders() {
