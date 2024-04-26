@@ -216,11 +216,15 @@ export default class SearchLightExt extends Extension {
     {
       this._indicator = new St.Button({style_class: 'panel-status-indicators-box'});
       let icon = new St.Icon({gicon: new Gio.ThemedIcon({name: 'search-symbolic'})});
-      icon.style = 'margin-top: 4px !important; margin-bottom: 4px !important;';
+      icon.style = 'margin-top: 6px !important; margin-bottom: 6px !important;';
       this._indicator.add_child(icon);
-      this._indicator.visible = this.show_panel_icon;
       this._indicator.connect('button-press-event', this._toggle_search_light.bind(this));
-      Main.panel._rightBox.insert_child_at_index(this._indicator, 0);
+      try {
+        Main.panel._rightBox.insert_child_at_index(this._indicator, 0);
+        this._indicator.visible = this.show_panel_icon;
+      } catch(err) {
+        console.log(err);
+      }
     }
 
     this._updateProviders();
