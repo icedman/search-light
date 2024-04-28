@@ -1,5 +1,3 @@
-// Adapted from from Blur-My-Shell
-
 'use strict';
 
 import Shell from 'gi://Shell';
@@ -7,11 +5,11 @@ import GLib from 'gi://GLib';
 import GObject from 'gi://GObject';
 import Clutter from 'gi://Clutter';
 
-const getColorEffectShaderSource = (extensionDir) => {
+const getTintShaderSource = (extensionDir) => {
   const SHADER_PATH = GLib.build_filenamev([
     extensionDir,
     'effects',
-    'color_effect.glsl',
+    'blur_effect.glsl',
   ]);
 
   try {
@@ -22,18 +20,9 @@ const getColorEffectShaderSource = (extensionDir) => {
   }
 };
 
-/// New Clutter Shader Effect that simply mixes a color in, the class applies
-/// the GLSL shader programmed into vfunc_get_static_shader_source and applies
-/// it to an Actor.
-///
-/// Clutter Shader Source Code:
-/// https://github.com/GNOME/clutter/blob/master/clutter/clutter-shader-effect.c
-///
-/// GJS Doc:
-/// https://gjs-docs.gnome.org/clutter10~10_api/clutter.shadereffect
-export const ColorEffect = GObject.registerClass(
+export const BlurEffect = GObject.registerClass(
   {},
-  class SearchLightColorShader extends Clutter.ShaderEffect {
+  class SearchLighBlurEffect extends Clutter.ShaderEffect {
     _init(params) {
       this._red = null;
       this._green = null;
@@ -50,12 +39,13 @@ export const ColorEffect = GObject.registerClass(
       super._init(params);
 
       // set shader color
+
       if (_color) this.color = _color;
     }
 
     preload(path) {
       // set shader source
-      this._source = getColorEffectShaderSource(path);
+      this._source = getTintShaderSource(path);
       if (this._source) this.set_shader_source(this._source);
 
       this.update_enabled();
@@ -102,6 +92,12 @@ export const ColorEffect = GObject.registerClass(
     }
 
     set blend(value) {
+      if (value > 0.5) {
+        value *= 0.75;
+        if (value < 0.5) {
+          value = 0.5;
+        }
+      }
       if (this._blend !== value) {
         this._blend = value;
 

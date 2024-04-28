@@ -100,7 +100,7 @@
           </object>
         </child>
       </object>
-    </child> 
+    </child>
     <child>
       <object class="AdwPreferencesGroup">
         <property name="title" translatable="yes"/>

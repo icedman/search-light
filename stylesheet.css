@@ -2,6 +2,31 @@
   /* border: 2px solid red; */
 }
 
+#searchLight .overview-tile,
+#searchLight .search-provider-icon,
+#searchLight .list-search-provider-content,
+#searchLight .list-search-result {
+	background-color: transparent;
+}
+#searchLight .overview-tile:hover, 
+#searchLight .overview-tile:active,
+#searchLight .overview-tile:focus,
+#searchLight .search-provider-icon:hover,
+#searchLight .list-search-provider-content:hover,
+#searchLight .list-search-result:hover,
+#searchLight .search-provider-icon:active,
+#searchLight .list-search-provider-content:active,
+#searchLight .list-search-result:active,
+#searchLight .search-provider-icon:focus,
+#searchLight .list-search-provider-content:focus,
+#searchLight .list-search-result:focus {
+	background-color: rgba(0,0,0,0.4);
+}
+
+#searchLight .search-section-content {
+	background-color: rgba(0,0,0,0.2) !important;
+}
+
 #searchLightBox {
   /*padding: 14px;*/
   border: 0px;
