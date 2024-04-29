@@ -191,7 +191,7 @@ export default class SearchLightExt extends Extension {
     );
 
     this._loTimer.runOnce(() => {
-      this.show();
+      // this.show();
       // console.log('SearchLightExt: ???');
     }, 500);
 
