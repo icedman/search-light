@@ -462,6 +462,7 @@ export default class SearchLightExt extends Extension {
 
   _layout() {
     this._queryDisplay();
+    if (!this.monitor) return;
 
     // container size
     this.width =
@@ -750,7 +751,11 @@ export default class SearchLightExt extends Extension {
     }
 
     // ss.push(`\n background-image: url("${bg}");`);
-    if (this.blur_background && this.desktop_background_blurred) {
+    if (
+      this.blur_background &&
+      this.desktop_background_blurred &&
+      this.monitor
+    ) {
       let sw = this.monitor.width;
       let sh = this.monitor.height;
       let ss = [];
