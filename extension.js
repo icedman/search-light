@@ -215,27 +215,9 @@ export default class SearchLightExt extends Extension {
       }, idx * 5000);
     });
 
-    {
-      this._indicator = new St.Button({
-        style_class: 'panel-status-indicators-box',
-      });
-      let icon = new St.Icon({
-        gicon: new Gio.ThemedIcon({ name: 'search-symbolic' }),
-      });
-      icon.style = 'margin-top: 6px !important; margin-bottom: 6px !important;';
-      this._indicator.add_child(icon);
-      this._indicator.connect(
-        'button-press-event',
-        this._toggle_search_light.bind(this)
-      );
-      try {
-        Main.panel._rightBox.insert_child_at_index(this._indicator, 0);
-        this._indicator.visible = this.show_panel_icon;
-      } catch (err) {
-        console.log(err);
-      }
-    }
-
+    this._loTimer.runOnce(() => {
+      this._createIndicator();
+    }, 1500);
     this._updateProviders();
     this._updateWindowEffect();
     this._updateBlurredBackground();
@@ -248,10 +230,10 @@ export default class SearchLightExt extends Extension {
     this._loTimer = null;
 
     if (this._indicator) {
+      this._indicator.disconnectObject(this);
       if (this._indicator.get_parent()) {
         this._indicator.get_parent().remove_child(this._indicator);
       }
-      this._indicator.destroy();
       this._indicator = null;
     }
 
@@ -276,6 +258,29 @@ export default class SearchLightExt extends Extension {
     }
 
     this._removeProviders();
+  }
+
+  _createIndicator() {
+    if (this._indicator) return;
+    this._indicator = new St.Button({
+      style_class: 'panel-status-indicators-box',
+    });
+    let icon = new St.Icon({
+      gicon: new Gio.ThemedIcon({ name: 'search-symbolic' }),
+    });
+    icon.style = 'margin-top: 6px !important; margin-bottom: 6px !important;';
+    this._indicator.set_child(icon);
+    this._indicator.connectObject(
+      'button-press-event',
+      this._toggle_search_light.bind(this),
+      this
+    );
+    try {
+      Main.panel._rightBox.insert_child_at_index(this._indicator, 0);
+      this._indicator.visible = this.show_panel_icon;
+    } catch (err) {
+      console.log(err);
+    }
   }
 
   _createEffect(idx) {
