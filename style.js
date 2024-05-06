@@ -30,7 +30,7 @@ export let Style = class {
     });
 
     if (this.style_contents[name] === content) {
-      // log('skip regeneration');
+      // console.log('skip regeneration');
       return;
     }
 
@@ -52,7 +52,7 @@ export let Style = class {
 
     theme.load_stylesheet(fn);
 
-    // log(content);
+    // console.log(content);
   }
 
   rgba(color) {

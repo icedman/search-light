@@ -119,7 +119,7 @@ export default class SearchLightExt extends Extension {
       if (key.options) {
         this[`${name}_options`] = key.options;
       }
-      // log(`${name} ${key.value}`);
+      // console.log(`${name} ${key.value}`);
     });
 
     this._desktopSettings = new Gio.Settings({
@@ -191,7 +191,7 @@ export default class SearchLightExt extends Extension {
     );
 
     this._loTimer.runOnce(() => {
-      // this.show();
+      this.show();
       // console.log('SearchLightExt: ???');
     }, 500);
 
@@ -376,7 +376,9 @@ export default class SearchLightExt extends Extension {
         _search.removeProvider(p);
       });
     }
-    this._providers = [];
+    this._providers = null;
+    this._unitConversion = null;
+    this._currencyConversion = null;
   }
 
   _setupBackground() {
@@ -625,10 +627,6 @@ export default class SearchLightExt extends Extension {
     this._entry.add_style_class_name('slc');
 
     this._search = Main.overview.searchController;
-    // gnome 44 and prior
-    if (!Main.overview.searchController && Main.uiGroup.find_child_by_name) {
-      this._search = Main.uiGroup.find_child_by_name('searchController');
-    }
 
     this._search.hide();
     this._searchResults = this._search._searchResults;
@@ -682,7 +680,7 @@ export default class SearchLightExt extends Extension {
     }
 
     if (this._search) {
-      this._removeProviders();
+      // this._removeProviders();
       this._search.hide();
       this._search.get_parent().remove_child(this._search);
       this._searchParent.add_child(this._search);
@@ -814,7 +812,7 @@ export default class SearchLightExt extends Extension {
       styles.push('/* empty */');
     }
 
-    // log(styles);
+    // console.log(styles);
     this._style.build('custom-search-light', styles);
   }
 
@@ -896,7 +894,7 @@ export default class SearchLightExt extends Extension {
         },
       ]);
     } catch (err) {
-      log(err);
+      console.log(err);
     }
   }
 

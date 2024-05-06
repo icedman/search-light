@@ -2,7 +2,7 @@
 
 import GLib from 'gi://GLib';
 
-export let Timer = class {
+export const Timer = class {
   constructor(name) {
     this._name = name;
     this._subscribers = [];
@@ -185,7 +185,7 @@ export let Timer = class {
       this.start(this._resolution);
     }
 
-    // log(`subscribers: ${this.subscriberNames().join(',')}`);
+    // console.log(`subscribers: ${this.subscriberNames().join(',')}`);
     return obj;
   }
 
@@ -240,6 +240,30 @@ export let Timer = class {
         s._time += dt;
         if (s._time >= s._delay) {
           s._func(s);
+          s._time -= s._delay;
+        }
+      },
+    };
+    return this.subscribe(obj);
+  }
+
+  runUntil(func, delay, name) {
+    if (typeof func === 'object') {
+      func._time = 0;
+      return this.subscribe(func);
+    }
+    let obj = {
+      _name: name,
+      _type: 'until',
+      _time: 0,
+      _delay: delay,
+      _func: func,
+      onUpdate: (s, dt) => {
+        s._time += dt;
+        if (s._time >= s._delay) {
+          if (s._func(s)) {
+            this.unsubscribe(s);
+          }
           s._time -= s._delay;
         }
       },

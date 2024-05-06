@@ -86,6 +86,9 @@ def dump(f):
     for l in open(f, "r"):
         commentOut = False
 
+        if "this._search = Main.overview.searchController;" in l:
+            l = l + "\nif (!Main.overview.searchController && Main.uiGroup.find_child_by_name) { this._search = Main.uiGroup.find_child_by_name('searchController'); }"
+
         if "this.getSettings(schemaId)" in l:
             l = l.replace("this.getSettings", "ExtensionUtils.getSettings");
 

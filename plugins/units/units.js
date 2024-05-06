@@ -9,30 +9,8 @@ import { NewMetric } from './metric.js';
 const providerIcon = 'accessories-calculator';
 // const providerIcon = 'org.gnome.Terminal';
 
-const metric = NewMetric();
-
 function ucfirst(string) {
   return string.charAt(0).toUpperCase() + string.slice(1);
-}
-
-function get_unit(m) {
-  let unitTypes = Object.keys(metric.units);
-  for (let i = 0; i < unitTypes.length; i++) {
-    let ut = metric.units[unitTypes[i]];
-    let skeys = Object.keys(ut);
-    for (let j = 0; j < skeys.length; j++) {
-      let key = skeys[j];
-      // short
-      if (key === m) {
-        return ut[key];
-      }
-      // long
-      if (m.length > 2 && m.startsWith(ut[key].name)) {
-        return ut[key];
-      }
-    }
-  }
-  return null;
 }
 
 const p = /([0-9\.]*)\s{0,4}([a-z]*)\s{0,4}(to){0,1}\s{0,4}([a-z]*)/;
@@ -54,6 +32,7 @@ function toCamelCase(phrase) {
 
 export const UnitConversionProvider = class {
   constructor() {
+    this.metric = NewMetric();
     this._results = {};
   }
 
@@ -79,26 +58,58 @@ export const UnitConversionProvider = class {
     }
   }
 
+  get_unit(m) {
+    let unitTypes = Object.keys(this.metric.units);
+    for (let i = 0; i < unitTypes.length; i++) {
+      let ut = this.metric.units[unitTypes[i]];
+      let skeys = Object.keys(ut);
+      for (let j = 0; j < skeys.length; j++) {
+        let key = skeys[j];
+        // short
+        if (key === m) {
+          return ut[key];
+        }
+        // long
+        if (m.length > 2 && m.startsWith(ut[key].name)) {
+          return ut[key];
+        }
+      }
+    }
+    return null;
+  }
+
   parseAndConvert(q) {
     try {
+      let metric = this.metric;
       let res = p.exec(q);
+      let r1 = res[2];
+      let r2 = res[res.length - 1];
+
+      let _ns = (a) => {
+        a = a.substr(0, a.length - 1) + a.substr(a.length - 1).replace('s', '');
+        return a;
+      };
+
       let value = Number(res[1]);
-      let unitFrom = get_unit(res[2]);
-      let unitTo = get_unit(res[res.length - 1]);
+      let unitFrom = this.get_unit(r1) || this.get_unit(_ns(r1));
+      let unitTo = this.get_unit(r2) || this.get_unit(_ns(r2));
+
       if (value && unitFrom && unitTo) {
-        // console.log(value);
-        // console.log(unitFrom);
-        // console.log(unitTo);
+        console.log(value);
+        console.log(unitFrom);
+        console.log(unitTo);
         let hasDecimals = res[1].indexOf('.') != -1;
         let unitFromName = toCamelCase(unitFrom.name);
         let converter =
           metric[unitFromName] ||
           metric[`${unitFromName}s`] ||
           metric[`${unitFromName}es`];
+
         if (converter) {
           converter = converter.bind(metric);
           let convertFrom = converter(value);
           let unitToName = toCamelCase(unitTo.name);
+
           if (convertFrom) {
             let fn = `to${ucfirst(unitToName)}`;
             let convertTo =

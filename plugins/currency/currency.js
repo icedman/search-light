@@ -20,14 +20,16 @@ export const CurrencyConversionProvider = class {
   }
 
   initialize() {
-    this.updateRates();
+    // this.updateRates(true);
   }
 
   updateRates(refresh = false) {
     if (this._rates && !refresh) {
       return this._rates;
     }
+
     try {
+      console.log('fetching update exchange rates -----');
       let session = new Soup.Session();
       let msg = Soup.Message.new(
         'GET',
@@ -39,14 +41,15 @@ export const CurrencyConversionProvider = class {
       if (!line || !line[0]) return { error: true };
       this._rates = JSON.parse(line[0]);
       return this._rates;
-    } catch (err) {}
+    } catch (err) {
+      console.log(err);
+    }
 
     return this._rates || cachedRates;
   }
 
   parseAndConvert(q) {
     try {
-      let rates = this.updateRates();
       let res = p2.exec(q);
 
       let from = res[2].toUpperCase();
@@ -55,6 +58,23 @@ export const CurrencyConversionProvider = class {
 
       if (!from || !amount || !to) {
         return null;
+      }
+
+      let rates = this.updateRates(false);
+      // fetch latest rates
+      if (rates.rates[from] && rates.rates[to]) {
+        let dateNow = new Date();
+        let shouldRefresh = true;
+        if (this.lastUpdate) {
+          let diff = dateNow - this.lastUpdate;
+          if (diff < 1000 * 60 * 60 * 24) {
+            shouldRefresh = false;
+          }
+        }
+        rates = this.updateRates(shouldRefresh);
+        if (shouldRefresh) {
+          this.lastUpdate = dateNow;
+        }
       }
 
       let amountToUSD = amount * rates.rates[from];
