@@ -191,7 +191,7 @@ export default class SearchLightExt extends Extension {
     );
 
     this._loTimer.runOnce(() => {
-      this.show();
+      //this.show();
       // console.log('SearchLightExt: ???');
     }, 500);
 
@@ -258,6 +258,9 @@ export default class SearchLightExt extends Extension {
     }
 
     this._removeProviders();
+    this._providers = null;
+    this._unitConversion = null;
+    this._currencyConversion = null;
   }
 
   _createIndicator() {
@@ -376,9 +379,6 @@ export default class SearchLightExt extends Extension {
         _search.removeProvider(p);
       });
     }
-    this._providers = null;
-    this._unitConversion = null;
-    this._currencyConversion = null;
   }
 
   _setupBackground() {
