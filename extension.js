@@ -85,7 +85,10 @@ export default class SearchLightExt extends Extension {
           break;
         case 'unit-converter':
         case 'currency-converter':
-          this._updateProviders();
+          this._removeProviders();
+          this._loTimer.runOnce(() => {
+            this._updateProviders();
+          }, 1500);
           break;
         case 'background-color':
         case 'blur-background':
@@ -261,6 +264,9 @@ export default class SearchLightExt extends Extension {
     this._providers = null;
     this._unitConversion = null;
     this._currencyConversion = null;
+
+    Main.layoutManager.removeChrome(this.mainContainer);
+    this.mainContainer = null;
   }
 
   _createIndicator() {
@@ -379,6 +385,8 @@ export default class SearchLightExt extends Extension {
         _search.removeProvider(p);
       });
     }
+    
+    this._providers = null;
   }
 
   _setupBackground() {
@@ -680,7 +688,7 @@ export default class SearchLightExt extends Extension {
     }
 
     if (this._search) {
-      // this._removeProviders();
+      this._removeProviders();
       this._search.hide();
       this._search.get_parent().remove_child(this._search);
       this._searchParent.add_child(this._search);
