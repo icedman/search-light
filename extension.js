@@ -250,6 +250,13 @@ export default class SearchLightExt extends Extension {
     this._removeProviders();
     this._providers = null;
 
+    if (this._background) {
+      if (this._background.get_parent()) {
+        this._background.get_parent().remove_child(this._background);
+      }
+      this._background = null;
+    }
+
     Main.layoutManager.removeChrome(this.mainContainer);
     this.mainContainer = null;
   }

@@ -20,7 +20,6 @@ publish:
 	cp -r preferences ./build
 	cp -r effects ./build
 	cp -r apps ./build
-	cp -r plugins ./build
 	cp README.md ./build
 	cp CHANGELOG.md ./build
 	cp -R schemas ./build
@@ -29,7 +28,6 @@ publish:
 	rm -rf ./build/drawing.js
 	rm -rf ./build/chamfer.js
 	rm -rf ./build/imports_*
-	rm -rf ./plugin/units/tests
 	rm -rf ./*.zip
 	cd build ; \
 	zip -qr ../search-light@icedman.github.com.zip .
@@ -45,14 +43,11 @@ g44: build
 	mkdir -p ./build
 	mkdir -p ./build/apps
 	mkdir -p ./build/preferences
-	mkdir -p ./build/plugins/currency
-	mkdir -p ./build/plugins/units
 	python3 ./transpile.py
 	rm -rf ~/.local/share/gnome-shell/extensions/search-light@icedman.github.com/
 	mkdir -p ~/.local/share/gnome-shell/extensions/search-light@icedman.github.com/
 	cp -R ./schemas ./build
 	cp -R ./ui ./build
-	cp -R ./plugins ./build
 	cp ./apps/*.desktop ./build/apps
 	# cp ./effects/*.glsl ./build/effects
 	cp ./LICENSE* ./build
