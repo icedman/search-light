@@ -674,13 +674,3 @@ the library.  If this is what you want to do, use the GNU Lesser General
 Public License instead of this License.  But first, please read
 <https://www.gnu.org/licenses/why-not-lgpl.html>.
 
---------------------------------------
-Third Party Libraries:
-
-MetricJS
-
-* metricjs 1.0.1 <https://ianramosc.github.io/metric.js>
-* Copyright 2016 Ian Ramos <https://github.com/ianramosc>
-* Available under MIT license <https://github.com/ianramosc/metric.js>
-
---------------------------------------

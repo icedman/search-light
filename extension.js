@@ -36,8 +36,6 @@ import { BlurEffect } from './effects/blur_effect.js';
 
 import { schemaId, SettingsKeys } from './preferences/keys.js';
 import { KeyboardShortcuts } from './keybinding.js';
-import { UnitConversionProvider } from './plugins/units/units.js';
-import { CurrencyConversionProvider } from './plugins/currency/currency.js';
 
 import {
   Extension,
@@ -82,13 +80,6 @@ export default class SearchLightExt extends Extension {
           if (this._indicator) {
             this._indicator.visible = value;
           }
-          break;
-        case 'unit-converter':
-        case 'currency-converter':
-          this._removeProviders();
-          this._loTimer.runOnce(() => {
-            this._updateProviders();
-          }, 1500);
           break;
         case 'background-color':
         case 'blur-background':
@@ -204,11 +195,7 @@ export default class SearchLightExt extends Extension {
       `${this.path}/apps/org.gnome.Calculator.desktop`
     );
 
-    this._unitConversion = new UnitConversionProvider();
-    this._unitConversion.appInfo = appInfo;
-    this._currencyConversion = new CurrencyConversionProvider();
-    this._currencyConversion.appInfo = appInfo;
-    let _providers = [this._unitConversion, this._currencyConversion];
+    let _providers = [];
 
     // deferred startup for providers
     let idx = 0;
@@ -262,8 +249,6 @@ export default class SearchLightExt extends Extension {
 
     this._removeProviders();
     this._providers = null;
-    this._unitConversion = null;
-    this._currencyConversion = null;
 
     Main.layoutManager.removeChrome(this.mainContainer);
     this.mainContainer = null;
@@ -358,12 +343,7 @@ export default class SearchLightExt extends Extension {
     let _search = Main.overview.searchController;
     if (!_search) return;
 
-    if (this.unit_converter && this._unitConversion) {
-      this._providers.push(this._unitConversion);
-    }
-    if (this.currency_converter && this._currencyConversion) {
-      this._providers.push(this._currencyConversion);
-    }
+    // add providers here
 
     if (_search.addProvider) {
       this._providers.forEach((p) => {
@@ -385,7 +365,7 @@ export default class SearchLightExt extends Extension {
         _search.removeProvider(p);
       });
     }
-    
+
     this._providers = null;
   }
 
