@@ -450,16 +450,13 @@ export default class SearchLightExt extends Extension {
 
     this._add_events();
 
-    this._loTimer.runLoop(() => {
-      if (this._visible) {
-        this._disableDrag();
-      }
-    }, 500);
-
     Meta.disable_unredirect_for_display(global.display);
   }
 
   hide() {
+    if (this._isDraggingIcon()) {
+      return;
+    }
     this._visible = false;
     this._release_ui();
     this._remove_events();
@@ -467,6 +464,25 @@ export default class SearchLightExt extends Extension {
     // this._hidePopups();
 
     Meta.enable_unredirect_for_display(global.display);
+  }
+
+  _isDraggingIcon() {
+    // cancel all drag
+    let result = false;
+    try {
+      let grid = this._searchResults._content.first_child.first_child.child.child;
+      if (grid.style_class == 'grid-search-results') {
+        grid.get_children().forEach((c) => {
+          // console.log(`${c._name} ${c._draggable._dragState}`);
+          if (c._draggable && c._draggable._dragState == 1 /* DragState.DRAGGING */) {
+            result = true;
+          }
+        });
+      }
+    } catch(err) {
+      console.log(err);
+    }
+    return result;
   }
 
   _disableDrag() {
@@ -961,8 +977,6 @@ export default class SearchLightExt extends Extension {
       }
       this._search._text.get_parent().grab_key_focus();
     }
-
-    this._disableDrag();
 
     return Clutter.EVENT_STOP;
   }
