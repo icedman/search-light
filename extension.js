@@ -470,14 +470,16 @@ export default class SearchLightExt extends Extension {
     // cancel all drag
     let result = false;
     try {
-      let grid = this._searchResults._content.first_child.first_child.child.child;
-      if (grid.style_class == 'grid-search-results') {
-        grid.get_children().forEach((c) => {
-          // console.log(`${c._name} ${c._draggable._dragState}`);
-          if (c._draggable && c._draggable._dragState == 1 /* DragState.DRAGGING */) {
-            result = true;
-          }
-        });
+      if (this._searchResults) {
+        let grid = this._searchResults._content.first_child.first_child.child.child;
+        if (grid.style_class == 'grid-search-results') {
+          grid.get_children().forEach((c) => {
+            // console.log(`${c._name} ${c._draggable._dragState}`);
+            if (c._draggable && c._draggable._dragState == 1 /* DragState.DRAGGING */) {
+              result = true;
+            }
+          });
+        }
       }
     } catch(err) {
       console.log(err);
