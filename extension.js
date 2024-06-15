@@ -18,6 +18,7 @@
  */
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import * as DND from 'resource:///org/gnome/shell/ui/dnd.js';
 import Meta from 'gi://Meta';
 import Shell from 'gi://Shell';
 import Gio from 'gi://Gio';
@@ -185,7 +186,7 @@ export default class SearchLightExt extends Extension {
     );
 
     this._loTimer.runOnce(() => {
-      //this.show();
+      // this.show();
       // console.log('SearchLightExt: ???');
     }, 500);
 
@@ -449,6 +450,12 @@ export default class SearchLightExt extends Extension {
 
     this._add_events();
 
+    this._loTimer.runLoop(() => {
+      if (this._visible) {
+        this._disableDrag();
+      }
+    }, 500);
+
     Meta.disable_unredirect_for_display(global.display);
   }
 
@@ -460,6 +467,23 @@ export default class SearchLightExt extends Extension {
     // this._hidePopups();
 
     Meta.enable_unredirect_for_display(global.display);
+  }
+
+  _disableDrag() {
+    // cancel all drag
+    try {
+      let grid = this._searchResults._content.first_child.first_child.child.child;
+      if (grid.style_class == 'grid-search-results') {
+        grid.get_children().forEach((c) => {
+          if (c._draggable) {
+            c._draggable.startDrag = () => {}
+            c._draggable._maybeStartDrag = () => {}
+          }
+        });
+      }
+    } catch(err) {
+      console.log(err);
+    }
   }
 
   _layout() {
@@ -667,7 +691,7 @@ export default class SearchLightExt extends Extension {
     this._search._text.get_parent().grab_key_focus();
   }
 
-  _release_ui() {
+  _release_ui() {    
     if (this._entry) {
       this._entry.get_parent().remove_child(this._entry);
       this._entryParent.add_child(this._entry);
@@ -937,6 +961,9 @@ export default class SearchLightExt extends Extension {
       }
       this._search._text.get_parent().grab_key_focus();
     }
+
+    this._disableDrag();
+
     return Clutter.EVENT_STOP;
   }
 
