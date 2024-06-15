@@ -485,23 +485,6 @@ export default class SearchLightExt extends Extension {
     return result;
   }
 
-  _disableDrag() {
-    // cancel all drag
-    try {
-      let grid = this._searchResults._content.first_child.first_child.child.child;
-      if (grid.style_class == 'grid-search-results') {
-        grid.get_children().forEach((c) => {
-          if (c._draggable) {
-            c._draggable.startDrag = () => {}
-            c._draggable._maybeStartDrag = () => {}
-          }
-        });
-      }
-    } catch(err) {
-      console.log(err);
-    }
-  }
-
   _layout() {
     this._queryDisplay();
     if (!this.monitor) return;
@@ -709,7 +692,9 @@ export default class SearchLightExt extends Extension {
 
   _release_ui() {    
     if (this._entry) {
-      this._entry.get_parent().remove_child(this._entry);
+      if (this._entry.get_parent()) {
+        this._entry.get_parent().remove_child(this._entry);
+      }
       this._entryParent.add_child(this._entry);
       this._entry = null;
     }
@@ -717,7 +702,9 @@ export default class SearchLightExt extends Extension {
     if (this._search) {
       this._removeProviders();
       this._search.hide();
-      this._search.get_parent().remove_child(this._search);
+      if (this._search.get_parent()) {
+        this._search.get_parent().remove_child(this._search);
+      }
       this._searchParent.add_child(this._search);
       if (this._textChangedEventId) {
         this._search._text.disconnect(this._textChangedEventId);
