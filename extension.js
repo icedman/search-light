@@ -167,8 +167,6 @@ export default class SearchLightExt extends Extension {
       this
     );
 
-    Main.sessionMode.connectObject('updated', () => this.hide(), this);
-
     Shell.AppSystem.get_default().connectObject(
       'app-state-changed',
       this._onAppStateChanged.bind(this),
@@ -874,7 +872,6 @@ export default class SearchLightExt extends Extension {
     global.display.disconnectObject(this);
     global.stage.disconnectObject(this);
     Main.overview.disconnectObject(this);
-    Main.sessionMode.disconnectObject(this);
     Shell.AppSystem.get_default().disconnectObject(this);
   }
 
