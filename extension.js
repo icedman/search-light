@@ -437,15 +437,20 @@ export default class SearchLightExt extends Extension {
     this.mainContainer.opacity = 0;
     this._updateCss();
     this._layout();
-    this.mainContainer.show();
-    this.container.show();
 
     // fixes the background size relative to text - after adjusting font size
     this._hiTimer.runOnce(() => {
-      this.mainContainer.opacity = 255;
       this._layout();
+      // animate after adjust so width+height are correct
+      this.mainContainer.ease({
+        opacity : 255,
+        duration : 100,
+        mode : Clutter.AnimationMode.EASE_OUT
+      });
     }, 100);
 
+    this.mainContainer.show();
+    this.container.show();
     this._add_events();
 
     Meta.disable_unredirect_for_display(global.display);
@@ -455,10 +460,19 @@ export default class SearchLightExt extends Extension {
     if (this._isDraggingIcon()) {
       return;
     }
-    this._visible = false;
+
     this._release_ui();
     this._remove_events();
-    this.mainContainer.hide();
+
+    this.mainContainer.ease({
+      opacity : 0,
+      duration : 100,
+      mode : Clutter.AnimationMode.EASE_OUT,
+      onComplete : () => {
+        this._visible = false;
+        this.mainContainer.hide();
+      }
+    });
     // this._hidePopups();
 
     Meta.enable_unredirect_for_display(global.display);
