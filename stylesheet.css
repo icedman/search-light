@@ -8,6 +8,9 @@
 #searchLight .list-search-result {
 	background-color: transparent;
 }
+#searchLight .overview-tile:first-child {
+	background-color: rgba(40,40,40,0.6);
+}
 #searchLight .overview-tile:hover, 
 #searchLight .overview-tile:active,
 #searchLight .overview-tile:focus,
@@ -20,7 +23,7 @@
 #searchLight .search-provider-icon:focus,
 #searchLight .list-search-provider-content:focus,
 #searchLight .list-search-result:focus {
-	background-color: rgba(0,0,0,0.4);
+	background-color: rgba(40,40,40,0.4);
 }
 
 #searchLight .search-section-content {
