@@ -8,7 +8,8 @@
 #searchLight .list-search-result {
 	background-color: transparent;
 }
-#searchLight .overview-tile:first-child {
+#searchLight .overview-tile:selected,
+#searchLight .list-search-result:selected {
 	background-color: rgba(40,40,40,0.6);
 }
 #searchLight .overview-tile:hover, 
