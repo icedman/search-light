@@ -192,6 +192,37 @@
             </child>
           </object>
         </child>
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Animations</property>
+	    <property name="subtitle" translatable="yes">Enable fade-in and fade-out animations.</property>
+            <property name="activatable-widget">use-animations</property>
+            <child>
+              <object class="GtkSwitch" id="use-animations">
+                <property name="valign">center</property>
+              </object>
+            </child>
+          </object>
+        </child>
+	<child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Animation Speed</property>
+            <property name="subtitle" translatable="yes">Set the animation speed. Lower is faster.</property>
+            <property name="activatable-widget">animation-speed</property>
+            <child>
+              <object class="GtkScale" id="animation-speed">
+                <property name="valign">center</property>
+                <property name="hexpand">true</property>
+                <property name="width-request">140px</property>
+                <property name="draw-value">true</property>
+                <property name="value-pos">right</property>
+                <property name="orientation">horizontal</property>
+                <property name="digits">0</property>
+                <property name="adjustment">animation-speed-adjust</property>
+              </object>
+            </child>
+          </object>
+	</child>
       </object>
     </child>
     <child>
@@ -328,5 +359,10 @@
       <item translatable="yes">Monochrome</item>
       <!-- <item translatable="yes">(Test)</item> -->
     </items>
+  </object>
+  <object class="GtkAdjustment" id="animation-speed-adjust">
+    <property name="lower">10</property>
+    <property name="upper">1000</property>
+    <property name="step-increment">5</property>
   </object>
 </interface>

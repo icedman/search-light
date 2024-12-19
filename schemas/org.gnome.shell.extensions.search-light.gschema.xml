@@ -122,5 +122,15 @@
         <summary>Rendering effect color</summary>
         <description>Set the window rendering effect color.</description>
     </key>
+    <key type="b" name="use-animations">
+	<default>true</default>
+	<summary>Use window animations</summary>
+	<description>Toggle animations when the search window appears or disappears.</description>
+    </key>
+    <key type="d" name="animation-speed">
+	<default>100</default>
+	<summary>Animation speed</summary>
+	<description>Change the speed of the appear and disappear window effect.</description>
+    </key>
   </schema>
 </schemalist>

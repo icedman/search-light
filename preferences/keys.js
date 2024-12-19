@@ -107,6 +107,14 @@ export const SettingsKeys = () => {
       widget_type: 'color',
       themed: true,
     },
+    'use-animations': {
+      default_value: true,
+      widget_type: 'switch',
+    },
+    'animation-speed': {
+      default_value: 100,
+      widget_type: 'scale',
+    }
   });
 
   return settingsKeys;
