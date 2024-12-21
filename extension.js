@@ -446,6 +446,12 @@ export default class SearchLightExt extends Extension {
     this._updateCss();
     this._layout();
 
+    Meta.disable_unredirect_for_display(global.display);
+
+    this.mainContainer.show();
+    this.container.show();
+    this._add_events();
+
     // fixes the background size relative to text - after adjusting font size
     this._hiTimer.runOnce(() => {
       this._layout();
@@ -471,12 +477,6 @@ export default class SearchLightExt extends Extension {
         this.mainContainer.opacity = 255;
       }
     }, 100);
-
-    this.mainContainer.show();
-    this.container.show();
-    this._add_events();
-
-    Meta.disable_unredirect_for_display(global.display);
   }
 
   hide() {
@@ -499,16 +499,17 @@ export default class SearchLightExt extends Extension {
         onComplete : () => {
           this._visible = false;
           this.mainContainer.hide();
+          Meta.enable_unredirect_for_display(global.display);
         }
       });
     } else {
       this.mainContainer.opacity = 0;
       this._visible = false;
       this.mainContainer.hide();
+      Meta.enable_unredirect_for_display(global.display);
     }
     // this._hidePopups();
 
-    Meta.enable_unredirect_for_display(global.display);
   }
 
   _isDraggingIcon() {
