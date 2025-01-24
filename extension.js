@@ -52,7 +52,7 @@ var SearchLight = GObject.registerClass(
       this.offscreen_redirect = Clutter.OffscreenRedirect.ALWAYS;
       this.layout_manager = new Clutter.BinLayout();
     }
-  }
+  },
 );
 
 const BLURRED_BG_PATH = '/tmp/searchlight-bg-blurred.jpg';
@@ -87,12 +87,12 @@ export default class SearchLightExt extends Extension {
           this._updateBlurredBackground();
           this._updateCss();
           break;
-	case 'use-animations':
-	  this._useAnimations = value;
-	  break;
-	case 'animation-speed':
+        case 'use-animations':
+          this._useAnimations = value;
+          break;
+        case 'animation-speed':
           this._animationSpeed = value;
-	  break;
+          break;
         case 'border-radius':
           break;
         case 'shortcut-search':
@@ -131,7 +131,7 @@ export default class SearchLightExt extends Extension {
       () => {
         this._updateBlurredBackground();
       },
-      this
+      this,
     );
 
     this.mainContainer = new SearchLight();
@@ -173,13 +173,13 @@ export default class SearchLightExt extends Extension {
       this._onOverviewShowing.bind(this),
       'overview-hidden',
       this._onOverviewHidden.bind(this),
-      this
+      this,
     );
 
     Shell.AppSystem.get_default().connectObject(
       'app-state-changed',
       this._onAppStateChanged.bind(this),
-      this
+      this,
     );
 
     global.display.connectObject(
@@ -189,7 +189,7 @@ export default class SearchLightExt extends Extension {
           this.mainContainer.opacity = 0;
         }
       },
-      this
+      this,
     );
 
     this._loTimer.runOnce(() => {
@@ -200,7 +200,7 @@ export default class SearchLightExt extends Extension {
     Main.overview.searchLight = this;
 
     let appInfo = Gio.DesktopAppInfo.new_from_filename(
-      `${this.path}/apps/org.gnome.Calculator.desktop`
+      `${this.path}/apps/org.gnome.Calculator.desktop`,
     );
 
     let _providers = [];
@@ -282,7 +282,7 @@ export default class SearchLightExt extends Extension {
     this._indicator.connectObject(
       'button-press-event',
       this._toggle_search_light.bind(this),
-      this
+      this,
     );
     try {
       Main.panel._rightBox.insert_child_at_index(this._indicator, 0);
@@ -436,6 +436,10 @@ export default class SearchLightExt extends Extension {
   show() {
     if (Main.overview.visible) return;
 
+    if (this._animSeq) {
+      this._hiTimer.cancel(this._animSeq);
+      this._animSeq = null;
+    }
     this._acquire_ui();
 
     if (this._bgActor) {
@@ -453,23 +457,24 @@ export default class SearchLightExt extends Extension {
     this._add_events();
 
     // fixes the background size relative to text - after adjusting font size
-    this._hiTimer.runOnce(() => {
+    this._animSeq = this._hiTimer.runOnce(() => {
+      this._animSeq = null;
       this._layout();
       // animate after adjust so width+height are correct
       if (this._useAnimations) {
         this.mainContainer.opacity = 0;
         this.mainContainer.scale_x = 0.9;
         this.mainContainer.scale_y = 0.9;
-        this.mainContainer.translation_x = this.width * 0.1 / 2
-        this.mainContainer.translation_y = this.height * 0.1 / 2
+        this.mainContainer.translation_x = (this.width * 0.1) / 2;
+        this.mainContainer.translation_y = (this.height * 0.1) / 2;
         this.mainContainer.ease({
-          opacity : 255,
-          scale_x : 1.0,
-          scale_y : 1.0,
-          translation_x : 0,
-          translation_y : 0,
-          duration : this._animationSpeed,
-          mode : Clutter.AnimationMode.EASE_OUT
+          opacity: 255,
+          scale_x: 1.0,
+          scale_y: 1.0,
+          translation_x: 0,
+          translation_y: 0,
+          duration: this._animationSpeed,
+          mode: Clutter.AnimationMode.EASE_OUT,
         });
       } else {
         this.mainContainer.scale_x = 1.0;
@@ -489,18 +494,18 @@ export default class SearchLightExt extends Extension {
 
     if (this._useAnimations) {
       this.mainContainer.ease({
-        opacity : 0,
-        scale_x : 0.9,
-        scale_y : 0.9,
-        translation_x : this.width * 0.1 / 2,
-        translation_y : this.height * 0.1 / 2,
-        duration : this._animationSpeed,
-        mode : Clutter.AnimationMode.EASE_OUT,
-        onComplete : () => {
+        opacity: 0,
+        scale_x: 0.9,
+        scale_y: 0.9,
+        translation_x: (this.width * 0.1) / 2,
+        translation_y: (this.height * 0.1) / 2,
+        duration: this._animationSpeed,
+        mode: Clutter.AnimationMode.EASE_OUT,
+        onComplete: () => {
           this._visible = false;
           this.mainContainer.hide();
           Meta.enable_unredirect_for_display(global.display);
-        }
+        },
       });
     } else {
       this.mainContainer.opacity = 0;
@@ -509,7 +514,6 @@ export default class SearchLightExt extends Extension {
       Meta.enable_unredirect_for_display(global.display);
     }
     // this._hidePopups();
-
   }
 
   _isDraggingIcon() {
@@ -517,17 +521,21 @@ export default class SearchLightExt extends Extension {
     let result = false;
     try {
       if (this._searchResults) {
-        let grid = this._searchResults._content.first_child.first_child.child.child;
+        let grid =
+          this._searchResults._content.first_child.first_child.child.child;
         if (grid.style_class == 'grid-search-results') {
           grid.get_children().forEach((c) => {
             // console.log(`${c._name} ${c._draggable._dragState}`);
-            if (c._draggable && c._draggable._dragState == 1 /* DragState.DRAGGING */) {
+            if (
+              c._draggable &&
+              c._draggable._dragState == 1 /* DragState.DRAGGING */
+            ) {
               result = true;
             }
           });
         }
       }
-    } catch(err) {
+    } catch (err) {
       console.log(err);
     }
     return result;
@@ -588,7 +596,7 @@ export default class SearchLightExt extends Extension {
       this._background.set_position(padding, padding);
       this._background.set_size(
         this.monitor.width - padding * 2,
-        this.monitor.height - padding * 2
+        this.monitor.height - padding * 2,
       );
     }
   }
@@ -659,7 +667,7 @@ export default class SearchLightExt extends Extension {
     if (this._last_monitor_count != Main.layoutManager.monitors.length) {
       this._settings.set_int(
         'monitor-count',
-        Main.layoutManager.monitors.length
+        Main.layoutManager.monitors.length,
       );
       this._last_monitor_count = Main.layoutManager.monitors.length;
     }
@@ -732,13 +740,13 @@ export default class SearchLightExt extends Extension {
           this._edges[3].y = this.height - 2;
         }
         this._search.show();
-      }
+      },
     );
 
     this._search._text.get_parent().grab_key_focus();
   }
 
-  _release_ui() {    
+  _release_ui() {
     if (this._entry) {
       if (this._entry.get_parent()) {
         this._entry.get_parent().remove_child(this._entry);
@@ -834,7 +842,7 @@ export default class SearchLightExt extends Extension {
       let ss = [];
       // ss.push(`\n background-image: url("${BLURRED_BG_PATH}");`);
       ss.push(
-        `\n background-image: url("${this.desktop_background_blurred}");`
+        `\n background-image: url("${this.desktop_background_blurred}");`,
       );
       ss.push(`\n background-size: ${sw}px ${sh}px;`);
       ss.push(`\n background-position: top center;`);
@@ -870,7 +878,7 @@ export default class SearchLightExt extends Extension {
       f = this.entry_font_size_options[this.entry_font_size];
       if (f) {
         styles.push(
-          `#searchLightBox > StEntry, #searchLightBox > StEntry:focus { font-size: ${f}pt !important; }`
+          `#searchLightBox > StEntry, #searchLightBox > StEntry:focus { font-size: ${f}pt !important; }`,
         );
       }
     }
@@ -904,7 +912,7 @@ export default class SearchLightExt extends Extension {
       this._onKeyFocusChanged.bind(this),
       'key-press-event',
       this._onKeyPressed.bind(this),
-      this
+      this,
     );
 
     global.display.connectObject(
@@ -912,7 +920,7 @@ export default class SearchLightExt extends Extension {
       this._onFocusWindow.bind(this),
       'in-fullscreen-changed',
       this._onFullScreen.bind(this),
-      this
+      this,
     );
   }
 

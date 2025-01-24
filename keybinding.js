@@ -13,7 +13,7 @@ export const KeyboardShortcuts = class {
       'accelerator-activated',
       (display, action, deviceId, timestamp) => {
         this._onAccelerator(action);
-      }
+      },
     );
   }
 

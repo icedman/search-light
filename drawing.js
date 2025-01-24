@@ -42,7 +42,7 @@ function draw_rounded_rect(
   h_size,
   v_size,
   line_width,
-  border_radius
+  border_radius,
 ) {
   ctx.save();
   set_color(ctx, color, 1);
@@ -60,7 +60,7 @@ function draw_rounded_rect(
     h_size,
     v_size,
     h_size - border_radius,
-    v_size
+    v_size,
   );
   ctx.lineTo(border_radius, v_size);
   // ctx.lineTo(0, h_size - border_radius);

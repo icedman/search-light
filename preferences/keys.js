@@ -114,7 +114,7 @@ export const SettingsKeys = () => {
     'animation-speed': {
       default_value: 100,
       widget_type: 'scale',
-    }
+    },
   });
 
   return settingsKeys;

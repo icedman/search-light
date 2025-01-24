@@ -35,7 +35,7 @@ export const Timer = class {
     this._timeoutId = GLib.timeout_add(
       GLib.PRIORITY_DEFAULT,
       this._resolution,
-      this.onUpdate.bind(this)
+      this.onUpdate.bind(this),
     );
     this._hibernating = false;
     this.onStart();

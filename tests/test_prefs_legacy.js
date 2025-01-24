@@ -25,7 +25,7 @@ class PrefKeys {
         key.value_type,
         key.default_value,
         key.widget_type,
-        key.key_maps
+        key.key_maps,
       );
     });
   }
@@ -160,7 +160,7 @@ app.connect('activate', (me) => {
   builder.add_from_file(`ui/legacy/general.ui`);
   notebook.append_page(
     builder.get_object('general'),
-    new Gtk.Label({ label: 'General' })
+    new Gtk.Label({ label: 'General' }),
   );
 
   prefKeys.connectSignals(builder);

@@ -73,6 +73,7 @@
     </child>
     <child>
       <object class="AdwPreferencesGroup" id="providers-group">
+        <property name="visible">false</property>
         <property name="title" translatable="yes">Providers</property>
         <property name="description" translatable="yes"/>
         <child>

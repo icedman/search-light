@@ -139,5 +139,5 @@ export const ColorEffect = GObject.registerClass(
       else if (paint_node) super.vfunc_paint_target(paint_node);
       else super.vfunc_paint_target();
     }
-  }
+  },
 );

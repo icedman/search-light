@@ -10,7 +10,7 @@ const genParam = (type, name, ...dflt) =>
     name,
     name,
     GObject.ParamFlags.READWRITE,
-    ...dflt
+    ...dflt,
   );
 
 const _ = (t) => t;
@@ -26,7 +26,7 @@ export let ShortcutSettingWidget = class extends Gtk.Button {
           changed: { param_types: [GObject.TYPE_STRING] },
         },
       },
-      this
+      this,
     );
   }
 
@@ -47,7 +47,7 @@ export let ShortcutSettingWidget = class extends Gtk.Button {
       'shortcut',
       label,
       'accelerator',
-      GObject.BindingFlags.DEFAULT
+      GObject.BindingFlags.DEFAULT,
     );
     [this.shortcut] = this._settings.get_strv(this._key);
   }
@@ -105,7 +105,7 @@ export let ShortcutSettingWidget = class extends Gtk.Button {
         null,
         keyval,
         keycode,
-        mask
+        mask,
       );
     }
 

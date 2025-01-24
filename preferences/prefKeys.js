@@ -16,7 +16,7 @@ export let PrefKeys = class {
         key.key_maps,
         key.test,
         key.callback,
-        key.options
+        key.options,
       );
     });
   }
@@ -144,7 +144,7 @@ export let PrefKeys = class {
                   green: key.value[1],
                   blue: key.value[2],
                   alpha: key.value[3],
-                })
+                }),
               );
             }
           } catch (err) {
@@ -200,7 +200,7 @@ export let PrefKeys = class {
             }
           }
           if (callback) callback(name, key.value);
-        })
+        }),
       );
     });
   }

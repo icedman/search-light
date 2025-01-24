@@ -94,7 +94,7 @@ export default class Preferences extends ExtensionPreferences {
     actions.forEach((action) => {
       let act = new Gio.SimpleAction({ name: action.name });
       act.connect('activate', (_) =>
-        Gtk.show_uri(window, action.link, Gdk.CURRENT_TIME)
+        Gtk.show_uri(window, action.link, Gdk.CURRENT_TIME),
       );
       actionGroup.add_action(act);
     });
@@ -140,22 +140,22 @@ export default class Preferences extends ExtensionPreferences {
           builder.get_object('accelerator'),
           settings,
           'shortcut-search',
-          window
-        )
+          window,
+        ),
       );
     }
 
     {
       let placeholder = builder.get_object(
-        'secondary-shortcut-search-placeholder'
+        'secondary-shortcut-search-placeholder',
       );
       placeholder.append(
         new ShortcutSettingWidget(
           builder.get_object('accelerator'),
           settings,
           'secondary-shortcut-search',
-          window
-        )
+          window,
+        ),
       );
     }
 

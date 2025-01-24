@@ -195,7 +195,7 @@
         <child>
           <object class="AdwActionRow">
             <property name="title" translatable="yes">Animations</property>
-	    <property name="subtitle" translatable="yes">Enable fade-in and fade-out animations.</property>
+            <property name="subtitle" translatable="yes">Enable fade-in and fade-out animations.</property>
             <property name="activatable-widget">use-animations</property>
             <child>
               <object class="GtkSwitch" id="use-animations">
@@ -204,7 +204,7 @@
             </child>
           </object>
         </child>
-	<child>
+        <child>
           <object class="AdwActionRow">
             <property name="title" translatable="yes">Animation Speed</property>
             <property name="subtitle" translatable="yes">Set the animation speed. Lower is faster.</property>
@@ -222,7 +222,7 @@
               </object>
             </child>
           </object>
-	</child>
+        </child>
       </object>
     </child>
     <child>
