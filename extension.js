@@ -138,7 +138,7 @@ export default class SearchLightExt extends Extension {
     this.mainContainer._delegate = this;
     this.container = new St.BoxLayout({
       name: 'searchLightBox',
-      vertical: true,
+      orientation: Clutter.Orientation.VERTICAL,
       reactive: true,
       track_hover: true,
       can_focus: true,
@@ -450,7 +450,7 @@ export default class SearchLightExt extends Extension {
     this._updateCss();
     this._layout();
 
-    Meta.disable_unredirect_for_display(global.display);
+    global.compositor.disable_unredirect();
 
     this.mainContainer.show();
     this.container.show();
@@ -504,14 +504,14 @@ export default class SearchLightExt extends Extension {
         onComplete: () => {
           this._visible = false;
           this.mainContainer.hide();
-          Meta.enable_unredirect_for_display(global.display);
+          global.compositor.enable_unredirect();
         },
       });
     } else {
       this.mainContainer.opacity = 0;
       this._visible = false;
       this.mainContainer.hide();
-      Meta.enable_unredirect_for_display(global.display);
+      global.compositor.enable_unredirect();
     }
     // this._hidePopups();
   }
@@ -981,7 +981,7 @@ export default class SearchLightExt extends Extension {
     if (!this._entry) return;
     let focus = global.stage.get_key_focus();
     let appearFocused =
-      this._entry.contains(focus) || this._searchResults.contains(focus);
+      focus && (this._entry.contains(focus) || this._searchResults.contains(focus));
 
     if (!appearFocused) {
       // popups are not handled well.. hide immediately
@@ -998,7 +998,7 @@ export default class SearchLightExt extends Extension {
     }
 
     // hide window immediately when activated
-    if (focus.activate) {
+    if (focus && focus.activate) {
       if (!focus._activate) {
         focus._activate = focus.activate;
         focus.activate = () => {
@@ -1012,7 +1012,7 @@ export default class SearchLightExt extends Extension {
   _onKeyPressed(obj, evt) {
     if (!this._entry) return;
     let focus = global.stage.get_key_focus();
-    if (!this._entry.contains(focus)) {
+    if (!focus || !this._entry.contains(focus)) {
       if (evt.get_key_symbol() === Clutter.KEY_Escape) {
         this.hide();
         return Clutter.EVENT_STOP;
