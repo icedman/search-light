@@ -494,8 +494,11 @@ export default class SearchLightExt extends Extension {
     this.mainContainer.hide();
     this.container.hide();
 
-    // Limpamos o foco
+    // Limpamos o foco e garantimos que nenhum elemento está ativo
     global.stage.set_key_focus(null);
+    if (this._search) {
+      this._search.hide();
+    }
 
     // Por fim, liberamos os recursos
     this._release_ui();
@@ -983,13 +986,14 @@ export default class SearchLightExt extends Extension {
   _onKeyPressed(obj, evt) {
     if (!this._entry) return;
     
+    if (evt.get_key_symbol() === Clutter.KEY_Escape) {
+      this.hide();
+      this._release_ui();
+      return Clutter.EVENT_STOP;
+    }
+
     let focus = global.stage.get_key_focus();
     if (!this._entry.contains(focus)) {
-      if (evt.get_key_symbol() === Clutter.KEY_Escape) {
-        this.hide();
-        this._release_ui();
-        return Clutter.EVENT_STOP;
-      }
       this._search._text.get_parent().grab_key_focus();
     }
 
