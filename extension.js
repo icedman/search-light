@@ -59,8 +59,6 @@ const BLURRED_BG_PATH = '/tmp/searchlight-bg-blurred.jpg';
 
 export default class SearchLightExt extends Extension {
   enable() {
-    Main.overview.graphene = Graphene;
-
     this._style = new Style();
 
     this._hiTimer = new Timer('hi-res timer');
@@ -450,8 +448,6 @@ export default class SearchLightExt extends Extension {
     this._updateCss();
     this._layout();
 
-    Meta.disable_unredirect_for_display(global.display);
-
     this.mainContainer.show();
     this.container.show();
     this._add_events();
@@ -489,31 +485,20 @@ export default class SearchLightExt extends Extension {
       return;
     }
 
-    this._release_ui();
+    // Primeiro removemos os eventos para evitar interações indesejadas
     this._remove_events();
 
-    if (this._useAnimations) {
-      this.mainContainer.ease({
-        opacity: 0,
-        scale_x: 0.9,
-        scale_y: 0.9,
-        translation_x: (this.width * 0.1) / 2,
-        translation_y: (this.height * 0.1) / 2,
-        duration: this._animationSpeed,
-        mode: Clutter.AnimationMode.EASE_OUT,
-        onComplete: () => {
-          this._visible = false;
-          this.mainContainer.hide();
-          Meta.enable_unredirect_for_display(global.display);
-        },
-      });
-    } else {
-      this.mainContainer.opacity = 0;
-      this._visible = false;
-      this.mainContainer.hide();
-      Meta.enable_unredirect_for_display(global.display);
-    }
-    // this._hidePopups();
+    // Depois escondemos a interface
+    this.mainContainer.opacity = 0;
+    this._visible = false;
+    this.mainContainer.hide();
+    this.container.hide();
+
+    // Limpamos o foco
+    global.stage.set_key_focus(null);
+
+    // Por fim, liberamos os recursos
+    this._release_ui();
   }
 
   _isDraggingIcon() {
@@ -942,7 +927,7 @@ export default class SearchLightExt extends Extension {
   _onAppStateChanged(st) {
     this._lastAppState = st;
     if (this._visible) {
-      this.mainContainer.opacity = 0;
+      this.hide();
     }
   }
 
@@ -975,46 +960,34 @@ export default class SearchLightExt extends Extension {
     }
   }
 
-  _onFocusWindow(w, e) {}
+  _onFocusWindow(w, e) {
+    // Se uma nova janela ganhar foco, escondemos a interface
+    if (w && w !== this.mainContainer) {
+      this.hide();
+    }
+  }
 
   _onKeyFocusChanged(previous) {
     if (!this._entry) return;
+    
     let focus = global.stage.get_key_focus();
-    let appearFocused =
-      this._entry.contains(focus) || this._searchResults.contains(focus);
+    let appearFocused = this._entry.contains(focus) || 
+                       (this._searchResults && this._searchResults.contains(focus));
 
     if (!appearFocused) {
-      // popups are not handled well.. hide immediately
-      if (
-        focus &&
-        focus.style_class &&
-        focus.style_class.includes('popup-menu')
-      ) {
-        this._lastPopup = focus;
-        this._hidePopups();
-      }
-
+      // Se perdemos o foco, escondemos a interface
       this.hide();
-    }
-
-    // hide window immediately when activated
-    if (focus.activate) {
-      if (!focus._activate) {
-        focus._activate = focus.activate;
-        focus.activate = () => {
-          this.mainContainer.opacity = 0;
-          focus._activate();
-        };
-      }
     }
   }
 
   _onKeyPressed(obj, evt) {
     if (!this._entry) return;
+    
     let focus = global.stage.get_key_focus();
     if (!this._entry.contains(focus)) {
       if (evt.get_key_symbol() === Clutter.KEY_Escape) {
         this.hide();
+        this._release_ui();
         return Clutter.EVENT_STOP;
       }
       this._search._text.get_parent().grab_key_focus();
