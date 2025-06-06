@@ -137,11 +137,21 @@ export default class SearchLightExt extends Extension {
     this.mainContainer._delegate = this;
     this.container = new St.BoxLayout({
       name: 'searchLightBox',
-      orientation: Clutter.Orientation.VERTICAL,
+      // gnome 48? another one of those breaking changes :<
+      // orientation: Clutter.Orientation.VERTICAL,
+      // vertical: true,
       reactive: true,
       track_hover: true,
       can_focus: true,
     });
+
+    this.container.vertical = true;
+    try {
+      this.container.orientation = Clutter.Orientation.VERTICAL;
+    } catch(err) {
+      // fail silently for < 48
+    }
+
     this.hide();
     this.container._delegate = this;
 
