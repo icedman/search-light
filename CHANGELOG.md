@@ -1,8 +1,14 @@
 ## ROADMAP
 
-* add web search
-* add unit conversion
-* add currency conversion
+## release 17
+
+* fork gnome 48 from 47
+
+## release 16
+
+* add web search (scrapped)
+* add unit conversion (scrapped)
+* add currency conversion (scrapped)
 
 ## release 15
 
