@@ -92,6 +92,11 @@
         <summary>text color</summary>
         <description>Set text color.</description>
     </key>
+    <key type="(dddd)" name="panel-icon-color">
+        <default>(1.,1.,1.,1.)</default>
+        <summary>text color</summary>
+        <description>Set icon color.</description>
+    </key>
     <key type="(dddd)" name="entry-text-color">
         <default>(1.,1.,1.,0.)</default>
         <summary>entry text color</summary>

@@ -83,6 +83,7 @@ export default class SearchLightExt extends Extension {
           break;
         case 'background-color':
         case 'blur-background':
+        case 'panel-icon-color':
           this._updateBlurredBackground();
           this._updateCss();
           break;
@@ -194,7 +195,6 @@ export default class SearchLightExt extends Extension {
 
     this._loTimer.runOnce(() => {
       // this.show();
-      // console.log('SearchLightExt: ???');
     }, 500);
 
     Main.overview.searchLight = this;
@@ -275,6 +275,7 @@ export default class SearchLightExt extends Extension {
       style_class: 'panel-status-indicators-box',
     });
     let icon = new St.Icon({
+      style_class: 'panel-status-indicator-icon',
       gicon: new Gio.ThemedIcon({ name: 'search-symbolic' }),
     });
     icon.style = 'margin-top: 6px !important; margin-bottom: 6px !important;';
@@ -891,6 +892,16 @@ export default class SearchLightExt extends Extension {
       styles.push(`#searchLightBox * { color: rgba(${clr}) !important }`);
     } else {
       styles.push('/* empty */');
+    }
+
+    // icon color
+    {
+      let ss = [];
+      {
+        let clr = this._style.rgba(this.panel_icon_color);
+        ss.push(`\n  color: rgba(${clr}) !important;`);
+      }
+      styles.push(`.panel-status-indicator-icon {${ss.join(' ')}}`);
     }
 
     // console.log(styles);

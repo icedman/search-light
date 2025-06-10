@@ -69,6 +69,23 @@
             </child>
           </object>
         </child>
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Topbar Icon Color</property>
+            <property name="subtitle" translatable="yes">Select icon color.</property>
+            <property name="activatable-widget">panel-icon-color</property>
+            <child>
+              <object class="GtkColorButton" id="panel-icon-color">
+                <property name="valign">center</property>
+                <property name="hexpand">false</property>
+                <property name="width-request">70px</property>
+                <property name="height-request">45px</property>
+                <property name="show-editor">true</property>
+                <property name="use-alpha">true</property>
+              </object>
+            </child>
+          </object>
+        </child>
       </object>
     </child>
     <child>

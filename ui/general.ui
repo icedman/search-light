@@ -104,7 +104,7 @@
     </child>
     <child>
       <object class="AdwPreferencesGroup">
-        <property name="title" translatable="yes"/>
+        <property name="title" translatable="yes">Others</property>
         <property name="description" translatable="yes"/>
         <child>
           <object class="AdwActionRow">
