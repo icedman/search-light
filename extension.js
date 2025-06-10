@@ -899,7 +899,9 @@ export default class SearchLightExt extends Extension {
       let ss = [];
       {
         let clr = this._style.rgba(this.panel_icon_color);
-        ss.push(`\n  color: rgba(${clr}) !important;`);
+        if (this.panel_icon_color[3] > 0) {
+          ss.push(`\n  color: rgba(${clr}) !important;`);
+        }
       }
       styles.push(`.panel-status-indicator-icon {${ss.join(' ')}}`);
     }
