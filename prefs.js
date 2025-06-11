@@ -119,6 +119,12 @@ export default class Preferences extends ExtensionPreferences {
     window.add(builder.get_object('appearance'));
     window.set_search_enabled(true);
 
+    if (builder.get_object('qr')) {
+      builder
+        .get_object('qr')
+        .set_from_file(`${UIFolderPath}/images/qr_icedman.png`);
+    }
+
     // builder.get_object("providers-group").visible = false;
 
     let settings = this.getSettings(schemaId);

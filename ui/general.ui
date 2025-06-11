@@ -6,6 +6,35 @@
     <property name="icon-name">general-symbolic</property>
     <child>
       <object class="AdwPreferencesGroup">
+        <child>
+          <object class="GtkBox" id="bmc">
+            <property name="spacing">12</property>
+            <property name="margin-top">6</property>
+            <property name="margin-bottom">6</property>
+            <property name="margin-start">24</property>
+            <property name="margin-end">24</property>
+            <property name="orientation">horizontal</property>
+            <child>
+              <object class="GtkLabel">
+                <property name="label">Thank you for using &lt;b>Search Light&lt;/b>! Support development of this extension — &lt;a href="https://www.buymeacoffee.com/icedman">Buy Me a Coffee&lt;/a>
+                </property>
+                <property name="use-markup">true</property>
+                <property name="xalign">0</property>
+                <property name="wrap">true</property>
+                <property name="hexpand">true</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkImage" id="qr">
+                <property name="pixel-size">96</property>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
+    <child>
+      <object class="AdwPreferencesGroup">
         <property name="title" translatable="yes">Keybindings</property>
         <property name="description" translatable="yes"/>
         <child>
