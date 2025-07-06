@@ -1,8 +1,12 @@
 ## ROADMAP
 
-## release 17
+## release 38
 
 * fork gnome 48 from 47
+* add multi-user support
+* add fade-in animation
+* add blurred background
+* add panel icon (with color settings)
 
 ## release 16
 
