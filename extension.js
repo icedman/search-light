@@ -22,7 +22,6 @@ import * as DND from 'resource:///org/gnome/shell/ui/dnd.js';
 import Meta from 'gi://Meta';
 import Shell from 'gi://Shell';
 import Gio from 'gi://Gio';
-import GLib from 'gi://GLib';
 import GObject from 'gi://GObject';
 import Clutter from 'gi://Clutter';
 import St from 'gi://St';
@@ -38,6 +37,7 @@ import { BlurEffect } from './effects/blur_effect.js';
 
 import { schemaId, SettingsKeys } from './preferences/keys.js';
 import { KeyboardShortcuts } from './keybinding.js';
+import { SearchProvider } from './searchProvider.js'
 
 import {
   Extension,
@@ -56,10 +56,91 @@ var SearchLight = GObject.registerClass(
   },
 );
 
+const BLURRED_BG_PATH = '/tmp/searchlight-bg-blurred.jpg';
+
 export default class SearchLightExt extends Extension {
+  constructor(meta) {
+    super(meta);
+    this._provider = null;
+    this._decoder = null;
+    this.searchEngineUrls = null;
+    this.searchEngineIcons = null;
+    this._builder = null;
+    this._switch = null;
+    this.settings = this.getSettings();
+  }
+  _setSearchEngines() {
+    this._decoder = new TextDecoder();
+    const searchEngineFile = this.dir.get_child('search-engines.json');
+    const [, contents] = searchEngineFile.load_contents(null);
+    const json = JSON.parse(this._decoder.decode(contents));
+    this.searchEngineUrls = json.map(d => d.url);
+    this.searchEngineIcons = json.map(d => d.icon);
+  }
+
+  enableSearchEngine() {
+    if (this._decoder === null) {
+      this._setSearchEngines();
+    }
+
+    if (this._provider === null) {
+      this._provider = new SearchProvider(this);
+    }
+
+    if (Main.overview && Main.overview.searchController) {
+      Main.overview.searchController.addProvider(this._provider);
+    }
+
+    if (Main.overview.visible) {
+      Main.overview.hide();
+      Main.overview.show();
+    }
+  }
+
+  _deleteSearchEngines() {
+    this._decoder = null;
+    this.searchEngineUrls = null;
+    this.searchEngineIcons = null;
+  }
+
+  disableSearchEngine() {
+    if (this._provider instanceof SearchProvider) {
+      try {
+        if (Main.overview && Main.overview.searchController) {
+          Main.overview.searchController.removeProvider(this._provider);
+          Main.overview.searchController.reset();
+        }
+      } catch (e) {
+        log(`Erro ao remover provider: ${e}`);
+      }
+      this._provider = null;
+    }
+    this._provider = null;
+
+    if (Main.overview.visible) {
+      Main.overview.hide();
+      Main.overview.show();
+    }
+  }
   enable() {
     Main.overview.graphene = Graphene;
-    
+    this._settingsChangedId = this.settings.connect('changed::enable-search-engine', () => {
+      const val = this.settings.get_boolean('enable-search-engine');
+
+      if (this.settings.get_boolean('enable-search-engine')) {
+        this.enableSearchEngine();
+      } else {
+        this.disableSearchEngine();
+      }
+    });
+
+    const initVal = this.settings.get_boolean('enable-search-engine');
+    if (this.settings.get_boolean('enable-search-engine')) {
+      this.enableSearchEngine();
+    } else {
+      this.disableSearchEngine();
+    }
+
     this._style = new Style();
 
     this._hiTimer = new Timer('hi-res timer');
@@ -83,7 +164,6 @@ export default class SearchLightExt extends Extension {
           break;
         case 'background-color':
         case 'blur-background':
-        case 'panel-icon-color':
           this._updateBlurredBackground();
           this._updateCss();
           break;
@@ -138,12 +218,11 @@ export default class SearchLightExt extends Extension {
     this.mainContainer._delegate = this;
     this.container = new St.BoxLayout({
       name: 'searchLightBox',
-      orientation: Clutter.Orientation.VERTICAL,
+      vertical: true,
       reactive: true,
       track_hover: true,
       can_focus: true,
     });
-
     this.hide();
     this.container._delegate = this;
 
@@ -195,6 +274,7 @@ export default class SearchLightExt extends Extension {
 
     this._loTimer.runOnce(() => {
       // this.show();
+      // console.log('SearchLightExt: ???');
     }, 500);
 
     Main.overview.searchLight = this;
@@ -275,7 +355,6 @@ export default class SearchLightExt extends Extension {
       style_class: 'panel-status-indicators-box',
     });
     let icon = new St.Icon({
-      style_class: 'panel-status-indicator-icon',
       gicon: new Gio.ThemedIcon({ name: 'search-symbolic' }),
     });
     icon.style = 'margin-top: 6px !important; margin-bottom: 6px !important;';
@@ -326,17 +405,14 @@ export default class SearchLightExt extends Extension {
 
   _updateBlurredBackground() {
     this.desktop_background = this._desktopSettings.get_string('picture-uri');
-    
-    let uuid = GLib.get_user_name();
-    this.desktop_background_blurred = `/tmp/searchlight-${uuid}-bg-blurred.jpg`;
-
+    this.desktop_background_blurred = BLURRED_BG_PATH;
     if (this.blur_background) {
       //   let color = this.background_color || [0, 0, 0, 0.5];
       //   let bg = this._desktopSettings.get_string('picture-uri');
       //   let a = Math.floor(100 - color[3] * 100);
       //   let rgb = this._style.hex(color);
-      // 	 let cmd = `convert -scale 10% -blur 0x2.5 -resize 200% -fill "${rgb}" -tint ${a} "${bg}" ${this.desktop_background_blurred}`;
-      let cmd = `convert -scale 10% -blur 0x2.5 -resize 200% "${this.desktop_background}" ${this.desktop_background_blurred}`;
+      // 	 let cmd = `convert -scale 10% -blur 0x2.5 -resize 200% -fill "${rgb}" -tint ${a} "${bg}" ${BLURRED_BG_PATH}`;
+      let cmd = `convert -scale 10% -blur 0x2.5 -resize 200% "${this.desktop_background}" ${BLURRED_BG_PATH}`;
       console.log(cmd);
       trySpawnCommandLine(cmd);
     }
@@ -353,7 +429,7 @@ export default class SearchLightExt extends Extension {
     this.windowEffect = effect;
   }
 
-  _updatePanelIcon(disable) {}
+  _updatePanelIcon(disable) { }
 
   _updateProviders() {
     this._removeProviders();
@@ -454,7 +530,7 @@ export default class SearchLightExt extends Extension {
     this._updateCss();
     this._layout();
 
-    global.compositor.disable_unredirect();
+    Meta.disable_unredirect_for_display(global.display);
 
     this.mainContainer.show();
     this.container.show();
@@ -508,14 +584,14 @@ export default class SearchLightExt extends Extension {
         onComplete: () => {
           this._visible = false;
           this.mainContainer.hide();
-          global.compositor.enable_unredirect();
+          Meta.enable_unredirect_for_display(global.display);
         },
       });
     } else {
       this.mainContainer.opacity = 0;
       this._visible = false;
       this.mainContainer.hide();
-      global.compositor.enable_unredirect();
+      Meta.enable_unredirect_for_display(global.display);
     }
     // this._hidePopups();
   }
@@ -730,7 +806,7 @@ export default class SearchLightExt extends Extension {
     this.container.add_child(this._search);
     if (!this._search.__searchCancelled) {
       this._search.__searchCancelled = this._search._searchCancelled;
-      this._search._searchCancelled = () => {};
+      this._search._searchCancelled = () => { };
     }
     this._search._text.get_parent().grab_key_focus();
     this._textChangedEventId = this._search._text.connect(
@@ -894,18 +970,6 @@ export default class SearchLightExt extends Extension {
       styles.push('/* empty */');
     }
 
-    // icon color
-    {
-      let ss = [];
-      {
-        let clr = this._style.rgba(this.panel_icon_color);
-        if (this.panel_icon_color[3] > 0) {
-          ss.push(`\n  color: rgba(${clr}) !important;`);
-        }
-      }
-      styles.push(`.panel-status-indicator-icon {${ss.join(' ')}}`);
-    }
-
     // console.log(styles);
     this._style.build('custom-search-light', styles);
   }
@@ -991,13 +1055,13 @@ export default class SearchLightExt extends Extension {
     }
   }
 
-  _onFocusWindow(w, e) {}
+  _onFocusWindow(w, e) { }
 
   _onKeyFocusChanged(previous) {
     if (!this._entry) return;
     let focus = global.stage.get_key_focus();
     let appearFocused =
-      focus && (this._entry.contains(focus) || this._searchResults.contains(focus));
+      this._entry.contains(focus) || this._searchResults.contains(focus);
 
     if (!appearFocused) {
       // popups are not handled well.. hide immediately
@@ -1014,7 +1078,7 @@ export default class SearchLightExt extends Extension {
     }
 
     // hide window immediately when activated
-    if (focus && focus.activate) {
+    if (focus.activate) {
       if (!focus._activate) {
         focus._activate = focus.activate;
         focus.activate = () => {
@@ -1028,7 +1092,7 @@ export default class SearchLightExt extends Extension {
   _onKeyPressed(obj, evt) {
     if (!this._entry) return;
     let focus = global.stage.get_key_focus();
-    if (!focus || !this._entry.contains(focus)) {
+    if (!this._entry.contains(focus)) {
       if (evt.get_key_symbol() === Clutter.KEY_Escape) {
         this.hide();
         return Clutter.EVENT_STOP;

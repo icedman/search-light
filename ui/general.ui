@@ -31,8 +31,37 @@
             </child>
           </object>
         </child>
+       <property name="title" translatable="yes">Search Engine</property>
+          <property name="description" translatable="yes">Configure search engine settings</property>
+            <child>
+              <object class="AdwActionRow" id="enable-search-engine-row">
+                <property name="title" translatable="yes">Enable Search Engine</property>
+                <property name="subtitle" translatable="yes">Enable search engine functionality for web searches.</property>
+                <property name="activatable-widget">enable-search-engine-switch</property>
+                <child>
+                  <object class="GtkSwitch" id="enable-search-engine-switch">
+                    <property name="valign">center</property>
+                  </object>
+                </child>
+              </object>
+            </child>  
+          <child>
+            <object class="AdwComboRow" id="search-engine-combo">
+              <property name="title" translatable="yes">Search Engine</property>
+              <property name="subtitle" translatable="yes">Select which engine to use for search</property>
+            </object>
+          </child>
+          <child>
+          <object class="AdwComboRow" id="browser-selection-combo">
+            <property name="title" translatable="yes">Browser</property>
+            <property name="subtitle" translatable="yes">Select which browser to use for opening search results</property>
+          </object>
+        </child>
+
       </object>
     </child>
+
+
     <child>
       <object class="AdwPreferencesGroup">
         <property name="title" translatable="yes">Keybindings</property>
