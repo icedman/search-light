@@ -15,6 +15,7 @@ import {
   ExtensionPreferences,
   gettext as _,
 } from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
+import { getAvailableBrowsers } from './utils.js';
 
 export default class Preferences extends ExtensionPreferences {
   constructor(metadata) {
@@ -106,6 +107,29 @@ export default class Preferences extends ExtensionPreferences {
     //
   }
 
+   setupBrowserCombo(combo, settings, enableSwitch) {
+    const browsers = getAvailableBrowsers();
+    const browserNames = browsers.map(browser => browser.name);
+    const browserList = new Gtk.StringList();
+    browserNames.forEach(name => browserList.append(name));
+    
+    combo.set_model(browserList);
+    combo.set_selected(settings.get_int('selected-browser'));
+    settings.bind('selected-browser', combo, 'selected', Gio.SettingsBindFlags.DEFAULT);
+
+    //To update combo browser state based on switch
+    function updateBrowserComboState() {
+      const isEnabled = enableSwitch.active;
+      combo.sensitive = isEnabled;
+      if (!isEnabled) {
+        combo.expanded = false;
+      }
+    }
+    // Hook the switch event to update the state
+    enableSwitch.connect('notify::active', updateBrowserComboState);
+    updateBrowserComboState();
+  }
+
   fillPreferencesWindow(window) {
     let builder = new Gtk.Builder();
 
@@ -137,6 +161,48 @@ export default class Preferences extends ExtensionPreferences {
 
     this._monitorsConfig = new MonitorsConfig();
     this._monitorsConfig.connect('updated', () => this.updateMonitors());
+
+    // shortcuts widget
+    const dropdown = builder.get_object('search-engine-combo');
+    const searchEngineFile = this.dir.get_child('search-engines.json');
+    // Engine Switch 
+    let switchWidget = builder.get_object('enable-search-engine-switch');
+    settings.bind(
+      'enable-search-engine', 
+      switchWidget,           
+      'active',           
+      Gio.SettingsBindFlags.DEFAULT
+    );
+
+    const [, contents] = searchEngineFile.load_contents(null);
+    const json = JSON.parse(new TextDecoder().decode(contents));
+    const searchEngineNames = json.map(d => d.name);
+    const enableSearchEngineSwitch = builder.get_object('enable-search-engine-switch');
+    const searchEngineCombo = builder.get_object('search-engine-combo');
+
+    //Saved state switche enable/disable search engine.
+    settings.bind('enable-search-engine', enableSearchEngineSwitch, 'active', Gio.SettingsBindFlags.DEFAULT);
+    function updateSearchEngineOptions() {
+      const isEnabled = enableSearchEngineSwitch.active;
+      searchEngineCombo.sensitive = isEnabled;
+      if (!isEnabled) {
+        searchEngineCombo.expanded = false;
+      }
+    }
+    enableSearchEngineSwitch.connect('notify::active', updateSearchEngineOptions);
+    enableSearchEngineSwitch.set_active(settings.get_boolean('enable-search-engine'));
+    updateSearchEngineOptions();
+
+    const list = new Gtk.StringList();
+
+    searchEngineNames.forEach(name => list.append(name));
+    dropdown.set_model(list);
+    dropdown.set_selected(settings.get_int('search-engine'));
+    settings.bind('search-engine', dropdown, 'selected', Gio.SettingsBindFlags.DEFAULT);
+    updateSearchEngineOptions();
+
+    const browserCombo = builder.get_object('browser-selection-combo');
+    this.setupBrowserCombo(browserCombo, settings, enableSearchEngineSwitch);
 
     // shortcuts widget
     {

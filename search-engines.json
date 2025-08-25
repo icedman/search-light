@@ -1,0 +1,62 @@
+[
+  {
+    "name": "DuckDuckGo",
+    "url": "https://www.duckduckgo.com/?q=",
+    "icon": "ui/icons/browsers/duckduckgo.png"
+  },
+  {
+    "name": "Bing",
+    "url": "https://www.bing.com/search?q=",
+    "icon": "ui/icons/browsers/bing.png"
+  },
+  { 
+    "name": "Brave",
+    "url": "https://search.brave.com/search?q=",
+    "icon": "ui/icons/browsers/brave.png"
+  },
+  {
+    "name": "Ecosia",
+    "url": "https://www.ecosia.org/search?q=",
+    "icon": "ui/icons/browsers/ecosia.png"
+  },
+  {
+    "name": "Google",
+    "url": "https://www.google.com/search?q=",
+    "icon": "ui/icons/browsers/google.png"
+  },
+  {
+    "name": "Kagi",
+    "url": "https://kagi.com/search?q=",
+    "icon": "ui/icons/browsers/kagi.png" 
+  },
+  {
+    "name": "Mojeek",
+    "url": "https://www.mojeek.com/search?q=",
+    "icon": "ui/icons/browsers/mojeek.png"
+  },
+  {
+    "name": "Perplexity",
+    "url": "https://www.perplexity.ai/search?q=",
+    "icon": "ui/icons/browsers/perplexity.png" 
+  },
+  {
+    "name": "Qwant",
+    "url": "https://www.qwant.com/?q=",
+    "icon": "ui/icons/browsers/qwant.png"
+  },
+  {
+    "name": "Startpage",
+    "url": "https://www.startpage.com/search?q=",
+    "icon": "ui/icons/browsers/startpage.png"
+  },
+  {
+    "name": "Yahoo",
+    "url": "https://search.yahoo.com/search?p=",
+    "icon": "ui/icons/browsers/yahoo.png"
+  },
+  {
+    "name": "Yandex",
+    "url": "https://yandex.com/search/?text=",
+    "icon": "ui/icons/browsers/yandex.png"
+  }  
+]

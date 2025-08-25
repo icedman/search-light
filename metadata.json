@@ -3,6 +3,8 @@
   "description": "Take the apps search out of overview.",
   "uuid": "search-light@icedman.github.com",
   "shell-version": [
+    "46",
+    "47",
     "48"
   ],
   "url": "https://github.com/icedman/search-light",
