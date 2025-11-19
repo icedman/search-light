@@ -75,6 +75,10 @@ export let ShortcutSettingWidget = class extends Gtk.Button {
   _onKeyPressed(_widget, keyval, keycode, state) {
     let mask = state & Gtk.accelerator_get_default_mod_mask();
     mask &= ~Gdk.ModifierType.LOCK_MASK;
+    
+    if (state & Gdk.ModifierType.MOD4_MASK) {
+      mask |= Gdk.ModifierType.MOD4_MASK;
+    }
 
     if (!mask && keyval === Gdk.KEY_Escape) {
       this._editor.close();
@@ -82,7 +86,11 @@ export let ShortcutSettingWidget = class extends Gtk.Button {
     }
 
     if (keyval === Gdk.KEY_BackSpace) {
-      this.saveShortcut(); // Clear shortcut
+      this.saveShortcut();
+      return Gdk.EVENT_STOP;
+    }
+
+    if (!mask) {
       return Gdk.EVENT_STOP;
     }
 
@@ -142,7 +150,7 @@ export let ShortcutSettingWidget = class extends Gtk.Button {
 
   isValidBinding(mask, keycode, keyval) {
     return !(
-      mask === 0 ||
+      false ||
       (mask === Gdk.SHIFT_MASK &&
         keycode !== 0 &&
         ((keyval >= Gdk.KEY_a && keyval <= Gdk.KEY_z) ||
@@ -160,12 +168,14 @@ export let ShortcutSettingWidget = class extends Gtk.Button {
           (keyval >= Gdk.KEY_Thai_kokai && keyval <= Gdk.KEY_Thai_lekkao) ||
           (keyval >= Gdk.KEY_Hangul_Kiyeog &&
             keyval <= Gdk.KEY_Hangul_J_YeorinHieuh) ||
-          (keyval === Gdk.KEY_space && mask === 0) ||
           this.keyvalIsForbidden(keyval)))
     );
   }
 
   isValidAccel(mask, keyval) {
+    if (keyval === Gdk.KEY_space && mask !== 0) {
+      return true;
+    }
     return (
       Gtk.accelerator_valid(keyval, mask) ||
       (keyval === Gdk.KEY_Tab && mask !== 0)
