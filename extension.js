@@ -44,6 +44,14 @@ import {
   gettext as _,
 } from 'resource:///org/gnome/shell/extensions/extension.js';
 
+let GioUnix = null;
+try {
+    GioUnix = await import('gi://GioUnix');
+} catch (e) {
+    console.log('GioUnix not available on this GNOME version');
+}
+const DesktopAppInfo = GioUnix?.DesktopAppInfo || Gio.DesktopAppInfo;
+
 var SearchLight = GObject.registerClass(
   {},
   class SearchLight extends St.Widget {
@@ -199,7 +207,7 @@ export default class SearchLightExt extends Extension {
 
     Main.overview.searchLight = this;
 
-    let appInfo = Gio.DesktopAppInfo.new_from_filename(
+    let appInfo = DesktopAppInfo.new_from_filename(
       `${this.path}/apps/org.gnome.Calculator.desktop`,
     );
 
