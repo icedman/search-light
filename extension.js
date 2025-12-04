@@ -60,6 +60,24 @@ var SearchLight = GObject.registerClass(
       this.name = 'searchLight';
       this.offscreen_redirect = Clutter.OffscreenRedirect.ALWAYS;
       this.layout_manager = new Clutter.BinLayout();
+
+      // for blur-my-shell
+      this._slider = {
+        get_child: () => {
+          return this;
+        },
+        get_parent: () => {
+          return this;
+        },
+      };
+
+      // pretend to be a dash
+      // required by blur-my-shell to find the dash upon disabling
+      this.dash = new St.Widget({name: 'dash'});
+      this.add_child(this.dash);
+      this.dash_background = new St.Widget({style_class: 'dash-background'});
+      this.add_child(this.dash);
+      this.dash._background = this.dash_background;
     }
   },
 );
