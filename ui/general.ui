@@ -26,7 +26,7 @@
             </child>
             <child>
               <object class="GtkImage" id="qr">
-                <property name="pixel-size">96</property>
+                <property name="pixel-size">156</property>
               </object>
             </child>
           </object>
