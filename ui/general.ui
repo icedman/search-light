@@ -16,7 +16,7 @@
             <property name="orientation">horizontal</property>
             <child>
               <object class="GtkLabel">
-                <property name="label">Thank you for using &lt;b>Search Light&lt;/b>! Support development of this extension — &lt;a href="https://www.buymeacoffee.com/icedman">Buy Me a Coffee&lt;/a>
+                <property name="label">Thank you for using &lt;b&gt;Search Light&lt;/b&gt;! Support development of this extension — &lt;a href="https://www.buymeacoffee.com/icedman"&gt;Buy Me a Coffee&lt;/a&gt;
                 </property>
                 <property name="use-markup">true</property>
                 <property name="xalign">0</property>

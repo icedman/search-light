@@ -46,9 +46,9 @@ import {
 
 let GioUnix = null;
 try {
-    GioUnix = await import('gi://GioUnix');
+  GioUnix = await import('gi://GioUnix');
 } catch (e) {
-    console.log('GioUnix not available on this GNOME version');
+  console.log('GioUnix not available on this GNOME version');
 }
 const DesktopAppInfo = GioUnix?.DesktopAppInfo || Gio.DesktopAppInfo;
 
@@ -73,19 +73,19 @@ var SearchLight = GObject.registerClass(
 
       // pretend to be a dash
       // required by blur-my-shell to find the dash upon disabling
-      this.dash = new St.Widget({name: 'dash'});
-      this.add_child(this.dash);
-      this.dash_background = new St.Widget({style_class: 'dash-background'});
-      this.add_child(this.dash);
-      this.dash._background = this.dash_background;
+      this.fake_dash = new St.Widget({ name: 'dash' });
+      this.add_child(this.fake_dash);
+      this.fake_dash_background = new St.Widget({ style_class: 'dash-background' });
+      this.fake_dash.add_child(this.fake_dash_background);
+      this.fake_dash._background = this.fake_dash_background;
     }
-  },
+  }
 );
 
 export default class SearchLightExt extends Extension {
   enable() {
     Main.overview.graphene = Graphene;
-    
+
     this._style = new Style();
 
     this._hiTimer = new Timer('hi-res timer');
@@ -110,7 +110,6 @@ export default class SearchLightExt extends Extension {
         case 'background-color':
         case 'blur-background':
         case 'panel-icon-color':
-          this._updateBlurredBackground();
           this._updateCss();
           break;
         case 'use-animations':
@@ -155,9 +154,9 @@ export default class SearchLightExt extends Extension {
     this._desktopSettings.connectObject(
       'changed::picture-uri',
       () => {
-        this._updateBlurredBackground();
+        
       },
-      this,
+      this
     );
 
     this.mainContainer = new SearchLight();
@@ -200,13 +199,13 @@ export default class SearchLightExt extends Extension {
       this._onOverviewShowing.bind(this),
       'overview-hidden',
       this._onOverviewHidden.bind(this),
-      this,
+      this
     );
 
     Shell.AppSystem.get_default().connectObject(
       'app-state-changed',
       this._onAppStateChanged.bind(this),
-      this,
+      this
     );
 
     global.display.connectObject(
@@ -216,7 +215,7 @@ export default class SearchLightExt extends Extension {
           this.mainContainer.opacity = 0;
         }
       },
-      this,
+      this
     );
 
     this._loTimer.runOnce(() => {
@@ -226,7 +225,7 @@ export default class SearchLightExt extends Extension {
     Main.overview.searchLight = this;
 
     let appInfo = DesktopAppInfo.new_from_filename(
-      `${this.path}/apps/org.gnome.Calculator.desktop`,
+      `${this.path}/apps/org.gnome.Calculator.desktop`
     );
 
     let _providers = [];
@@ -244,7 +243,6 @@ export default class SearchLightExt extends Extension {
     }, 1500);
     this._updateProviders();
     this._updateWindowEffect();
-    this._updateBlurredBackground();
   }
 
   disable() {
@@ -309,7 +307,7 @@ export default class SearchLightExt extends Extension {
     this._indicator.connectObject(
       'button-press-event',
       this._toggle_search_light.bind(this),
-      this,
+      this
     );
     try {
       Main.panel._rightBox.insert_child_at_index(this._indicator, 0);
@@ -348,24 +346,6 @@ export default class SearchLightExt extends Extension {
       }
     }
     return effect;
-  }
-
-  _updateBlurredBackground() {
-    this.desktop_background = this._desktopSettings.get_string('picture-uri');
-    
-    let uuid = GLib.get_user_name();
-    this.desktop_background_blurred = `/tmp/searchlight-${uuid}-bg-blurred.jpg`;
-
-    if (this.blur_background) {
-      //   let color = this.background_color || [0, 0, 0, 0.5];
-      //   let bg = this._desktopSettings.get_string('picture-uri');
-      //   let a = Math.floor(100 - color[3] * 100);
-      //   let rgb = this._style.hex(color);
-      // 	 let cmd = `convert -scale 10% -blur 0x2.5 -resize 200% -fill "${rgb}" -tint ${a} "${bg}" ${this.desktop_background_blurred}`;
-      let cmd = `convert -scale 10% -blur 0x2.5 -resize 200% "${this.desktop_background}" ${this.desktop_background_blurred}`;
-      console.log(cmd);
-      trySpawnCommandLine(cmd);
-    }
   }
 
   _updateWindowEffect() {
@@ -419,21 +399,6 @@ export default class SearchLightExt extends Extension {
       this._background.get_parent().remove_child(this._background);
     }
 
-    // blurred background image
-    // this._bgActor = new Meta.BackgroundActor();
-    // let bgSource = Main.layoutManager._backgroundGroup.get_child_at_index(0);
-    // this._bgActor.set_content(bgSource.get_content());
-    // this._blurEffect = new Shell.BlurEffect({
-    //   name: 'blur',
-    //   brightness: this.blur_brightness,
-    //   sigma: this.blur_sigma,
-    //   mode: Shell.BlurMode.ACTOR,
-    // });
-
-    if (!this._blurEffect) {
-      this._blurEffect = this._createEffect(1);
-    }
-
     let background = new St.Widget({
       name: 'searchLightBlurredBackground',
       layout_manager: new Clutter.BinLayout(),
@@ -442,20 +407,6 @@ export default class SearchLightExt extends Extension {
       width: 20,
       height: 20,
     });
-
-    // let image = new St.Widget({
-    //   name: 'searchLightBlurredBackgroundImage',
-    //   x: 0,
-    //   y: 0,
-    //   width: 20,
-    //   height: 20,
-    //   effect: this._blurEffect,
-    // });
-
-    // image.add_child(this._bgActor);
-    // background.add_child(image);
-    // this._bgActor.clip_to_allocation = true;
-    // this._bgActor.offscreen_redirect = Clutter.OffscreenRedirect.ALWAYS;
 
     this.mainContainer.insert_child_below(background, this.container);
     this._background = background;
@@ -626,8 +577,71 @@ export default class SearchLightExt extends Extension {
       this._background.set_position(padding, padding);
       this._background.set_size(
         this.monitor.width - padding * 2,
-        this.monitor.height - padding * 2,
+        this.monitor.height - padding * 2
       );
+    }
+
+    {
+      if (!this._bms) {
+        let bms_ext = Main.extensionManager.lookup('blur-my-shell@aunetx');
+        if (bms_ext && bms_ext.stateObj) {
+          let obj = bms_ext.stateObj;
+          if (obj._dash_to_dock_blur) {
+            obj._dash_to_dock_blur.try_blur(this.mainContainer);
+          }
+        }
+      }
+
+      // blur my shell
+      let bms = this.mainContainer.get_children().find((child) => {
+        let name = child.get_name();
+        return name === 'bms-dash-backgroundgroup';
+      });
+
+      this._bms = bms;
+      this._updateBlurSize();
+    }
+  }
+
+  _updateBlurSize() {
+    let bms = this._bms;
+    if (bms) {
+      if (!this.blur_background) {
+        bms.visible = false;
+        return;
+      }
+
+      let meta_background = bms.first_child.first_child;
+      if (!meta_background) {
+        // this should exists
+        return;
+      }
+
+      bms.visible = true;
+      let x = this.monitor.x + this.sw / 2 - this.width / 2;
+      let y = this.monitor.y + this.sh / 2 - this.height / 2;
+      bms.x = 0;
+      bms.y = 0;
+      bms.first_child.x = -x;
+      bms.first_child.y = -y;
+      bms.first_child.set_clip(
+        x,
+        y,
+        this.mainContainer.width,
+        this.mainContainer.height
+      );
+
+      let opacity = (this.background_color[3] ?? 0.5) * 54 + 200;
+      meta_background.opacity = opacity;
+
+      this._blur_effects = bms.first_child.get_effects();
+      if (this._blur_effects) {
+        this._blur_effects.forEach((e) => {
+          if (e.constructor.name == 'CornerEffect') {
+            e.radius = this.computed_border_radius ?? 0;
+          }
+        });
+      }
     }
   }
 
@@ -697,7 +711,7 @@ export default class SearchLightExt extends Extension {
     if (this._last_monitor_count != Main.layoutManager.monitors.length) {
       this._settings.set_int(
         'monitor-count',
-        Main.layoutManager.monitors.length,
+        Main.layoutManager.monitors.length
       );
       this._last_monitor_count = Main.layoutManager.monitors.length;
     }
@@ -769,8 +783,9 @@ export default class SearchLightExt extends Extension {
           this._corners[3].y = this.height - this._corners[1].height;
           this._edges[3].y = this.height - 2;
         }
+        this._updateBlurSize();
         this._search.show();
-      },
+      }
     );
 
     this._search._text.get_parent().grab_key_focus();
@@ -831,12 +846,6 @@ export default class SearchLightExt extends Extension {
       }
     }
 
-    this._background.remove_effect_by_name('blur');
-    if (this._blurEffect && this.blur_background) {
-      this._background.add_effect_with_name('blur', this._blurEffect);
-      this._blurEffect.color = bg;
-    }
-
     this._background.visible = true;
     this._background.opacity = 200;
 
@@ -844,10 +853,8 @@ export default class SearchLightExt extends Extension {
     {
       let ss = [];
 
-      if (!this.blur_background) {
-        let clr = this._style.rgba(this.background_color);
-        ss.push(`\n  background: rgba(${clr});`);
-      }
+      let rgba = this._style.rgba(this.background_color);
+      ss.push(`background: rgba(${rgba});`);
 
       if (
         this.border_thickness
@@ -861,34 +868,11 @@ export default class SearchLightExt extends Extension {
       styles.push(`#searchLightBlurredBackground {${ss.join(' ')}}`);
     }
 
-    // ss.push(`\n background-image: url("${bg}");`);
-    if (
-      this.blur_background &&
-      this.desktop_background_blurred &&
-      this.monitor
-    ) {
-      let sw = this.monitor.width;
-      let sh = this.monitor.height;
-      let ss = [];
-      // ss.push(`\n background-image: url("${BLURRED_BG_PATH}");`);
-      ss.push(
-        `\n background-image: url("${this.desktop_background_blurred}");`,
-      );
-      ss.push(`\n background-size: ${sw}px ${sh}px;`);
-      ss.push(`\n background-position: top center;`);
-      // ss.push(`\n border: 2px solid red;`);
-      this._background.style = ss.join(' ');
-
-      // styles.push(`#searchLightBlurredBackground {${ss.join(' ')}}`);
-      // styles.push(`#searchLight {${ss.join(' ')}}`);
-    } else {
-      this._background.style = '';
-    }
-
     {
       if (this.border_radius !== null) {
         let rads = [0, 16, 18, 20, 22, 24, 28, 32];
         let r = rads[Math.floor(this.border_radius)];
+        this.computed_border_radius = r;
         if (r) {
           let st = `StBoxLayout.search-section-content { border-radius: ${r}px !important; }`;
           st = '#searchLightBlurredBackgroundImage,\n' + st; // has no effect
@@ -908,7 +892,7 @@ export default class SearchLightExt extends Extension {
       f = this.entry_font_size_options[this.entry_font_size];
       if (f) {
         styles.push(
-          `#searchLightBox > StEntry, #searchLightBox > StEntry:focus { font-size: ${f}pt !important; }`,
+          `#searchLightBox > StEntry, #searchLightBox > StEntry:focus { font-size: ${f}pt !important; }`
         );
       }
     }
@@ -954,7 +938,7 @@ export default class SearchLightExt extends Extension {
       this._onKeyFocusChanged.bind(this),
       'key-press-event',
       this._onKeyPressed.bind(this),
-      this,
+      this
     );
 
     global.display.connectObject(
@@ -962,7 +946,7 @@ export default class SearchLightExt extends Extension {
       this._onFocusWindow.bind(this),
       'in-fullscreen-changed',
       this._onFullScreen.bind(this),
-      this,
+      this
     );
   }
 
@@ -1023,7 +1007,8 @@ export default class SearchLightExt extends Extension {
     if (!this._entry) return;
     let focus = global.stage.get_key_focus();
     let appearFocused =
-      focus && (this._entry.contains(focus) || this._searchResults.contains(focus));
+      focus &&
+      (this._entry.contains(focus) || this._searchResults.contains(focus));
 
     if (!appearFocused) {
       // popups are not handled well.. hide immediately
@@ -1061,7 +1046,6 @@ export default class SearchLightExt extends Extension {
       }
       this._search._text.get_parent().grab_key_focus();
     }
-
     return Clutter.EVENT_STOP;
   }
 
