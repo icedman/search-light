@@ -56,7 +56,9 @@ var SearchLight = GObject.registerClass(
   {},
   class SearchLight extends St.Widget {
     _init() {
-      super._init();
+      super._init({
+        style_class: 'searchLight'
+      });
       this.name = 'searchLight';
       this.offscreen_redirect = Clutter.OffscreenRedirect.ALWAYS;
       this.layout_manager = new Clutter.BinLayout();
@@ -78,6 +80,7 @@ var SearchLight = GObject.registerClass(
       this.fake_dash_background = new St.Widget({ style_class: 'dash-background' });
       this.fake_dash.add_child(this.fake_dash_background);
       this.fake_dash._background = this.fake_dash_background;
+      this.fake_dash.visible = false;
     }
   }
 );
@@ -300,6 +303,7 @@ export default class SearchLightExt extends Extension {
     });
     let icon = new St.Icon({
       style_class: 'panel-status-indicator-icon',
+      icon_size: 16,
       gicon: new Gio.ThemedIcon({ name: 'search-symbolic' }),
     });
     icon.style = 'margin-top: 6px !important; margin-bottom: 6px !important;';
@@ -524,7 +528,7 @@ export default class SearchLightExt extends Extension {
 
   _layout() {
     this._queryDisplay();
-    if (!this.monitor) return;
+    if (!this.monitor || !this._entry) return;
 
     // container size
     this.width =
@@ -741,6 +745,8 @@ export default class SearchLightExt extends Extension {
     this.scaleFactor = St.ThemeContext.get_for_stage(global.stage).scale_factor;
 
     this._entry = Main.overview.searchEntry;
+    if (!this._entry) return;
+    
     this._entryParent = this._entry.get_parent();
     this._entry.add_style_class_name('slc');
 
