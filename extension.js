@@ -149,7 +149,6 @@ export default class SearchLightExt extends Extension {
 
     Main.layoutManager.addChrome(this.mainContainer, {
       affectsStruts: false,
-      affectsInputRegion: true,
       trackFullscreen: false,
     });
 
