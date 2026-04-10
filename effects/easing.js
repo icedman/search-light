@@ -42,7 +42,7 @@ export const Bounce = {
   },
 };
 
-var Back = {
+export const Back = {
   easeIn: (t, b, c, d) => {
     let s = 1.70158;
     let postFix = (t /= d);

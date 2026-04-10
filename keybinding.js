@@ -5,13 +5,11 @@ import Shell from 'gi://Shell';
 // from https://stackoverflow.com/questions/12325405/gnome-shell-extension-key-binding
 
 export const KeyboardShortcuts = class {
-  constructor() {}
-
   enable() {
     this._grabbers = {};
     this._eventId = global.display.connect(
       'accelerator-activated',
-      (display, action, deviceId, timestamp) => {
+      (_display, action, _deviceId, _timestamp) => {
         this._onAccelerator(action);
       },
     );
@@ -24,8 +22,8 @@ export const KeyboardShortcuts = class {
 
   listenFor(accelerator, callback) {
     let action = global.display.grab_accelerator(accelerator, 0);
-    if (action == Meta.KeyBindingAction.NONE) {
-      console.log(`Unable to grab accelerator ${accelerator}`);
+    if (action === Meta.KeyBindingAction.NONE) {
+      log(`Unable to grab accelerator ${accelerator}`);
       return;
     }
 
@@ -33,12 +31,12 @@ export const KeyboardShortcuts = class {
     Main.wm.allowKeybinding(name, Shell.ActionMode.ALL);
 
     this._grabbers[action] = {
-      name: name,
-      accelerator: accelerator,
-      callback: callback,
+      name,
+      accelerator,
+      callback,
     };
 
-    console.log(`Grabbed ${accelerator}`);
+    log(`Grabbed ${accelerator}`);
   }
 
   unlisten() {
@@ -58,7 +56,7 @@ export const KeyboardShortcuts = class {
     if (grabber) {
       grabber.callback();
     } else {
-      console.log(`No listeners ${action}`);
+      log(`No listeners ${action}`);
     }
   }
 };

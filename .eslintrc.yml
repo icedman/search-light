@@ -1,3 +1,35 @@
 extends:
  - ./lint/eslintrc-gjs.yml
  - ./lint/eslintrc-shell.yml
+
+# ESM (GNOME Shell 45+); legacy gjs harnesses and unused helpers excluded
+parserOptions:
+  ecmaVersion: 2022
+  sourceType: module
+
+ignorePatterns:
+  - tests/
+  - drawing.js
+  - utils.js
+  - imports_extension.js
+  - imports_prefs.js
+
+# Project uses 2-space indent and relaxed brace style; keep error detection without mass reformat
+overrides:
+  - files:
+      - '*.js'
+      - 'effects/**/*.js'
+      - 'preferences/**/*.js'
+    rules:
+      indent: 'off'
+      curly: 'off'
+      comma-dangle: 'off'
+      nonblock-statement-body-position: 'off'
+      arrow-parens: 'off'
+      camelcase: 'off'
+      object-curly-spacing: 'off'
+      lines-between-class-members: 'off'
+      spaced-comment: 'off'
+      eqeqeq: 'off'
+      no-shadow: 'off'
+      no-extra-parens: 'off'
