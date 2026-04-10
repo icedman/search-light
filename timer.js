@@ -347,9 +347,9 @@ export const Timer = class {
   }
 
   runAnimation(array, settings) {
-    if (typeof func === 'object' && !array.length) {
-      func._time = 0;
-      return this.subscribe(func);
+    if (!Array.isArray(array)) {
+      array._time = 0;
+      return this.subscribe(array);
     }
 
     let duration = 0;

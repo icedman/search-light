@@ -6,8 +6,6 @@ import Gio from 'gi://Gio';
 
 import { ShortcutSettingWidget } from './shortcuts.js';
 
-const GETTEXT_DOMAIN = 'search-light';
-
 import { schemaId, SettingsKeys } from './preferences/keys.js';
 import { MonitorsConfig } from './monitors.js';
 
@@ -22,7 +20,7 @@ export default class Preferences extends ExtensionPreferences {
     let iconTheme = Gtk.IconTheme.get_for_display(Gdk.Display.get_default());
     let UIFolderPath = `${this.path}/ui`;
     iconTheme.add_search_path(`${UIFolderPath}/icons`);
-    // ExtensionUtils.initTranslations(GETTEXT_DOMAIN);
+    // ExtensionUtils.initTranslations('search-light');
   }
 
   find(n, name) {
@@ -102,7 +100,7 @@ export default class Preferences extends ExtensionPreferences {
     // window.remove(menu_util);
   }
 
-  addButtonEvents(window, builder, settings) {
+  addButtonEvents(_window, _builder, _settings) {
     //
   }
 

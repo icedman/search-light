@@ -22,7 +22,7 @@ export let Style = class {
       try {
         fn.delete(null);
       } catch (err) {
-        console.log(err);
+        logError(err);
       }
     });
   }
@@ -50,7 +50,7 @@ export let Style = class {
     }
 
     this.style_contents[name] = content;
-    const [, etag] = fn.replace_contents(
+    fn.replace_contents(
       content,
       null,
       false,
@@ -78,7 +78,7 @@ export let Style = class {
     if (g.length == 1) g += g;
     if (b.length == 1) b += b;
     let res = `#${r}${g}${b}`;
-    console.log(`${color} ${res}`);
+    log(`${color} ${res}`);
     return res;
   }
 };

@@ -1,6 +1,6 @@
-all: build install lint
+all: test install
 
-.PHONY: build install
+.PHONY: build install lint test
 
 build:
 	glib-compile-schemas --strict --targetdir=schemas/ schemas
@@ -29,8 +29,11 @@ publish:
 	rm -rf ./build/chamfer.js
 	rm -rf ./build/imports_*
 	rm -rf ./*.zip
-	cd build ; \
-	zip -qr ../search-light@icedman.github.com.zip .
+	@if command -v zip >/dev/null 2>&1; then \
+		cd build && zip -qr ../search-light@icedman.github.com.zip .; \
+	else \
+		python3 -c "import os, shutil; os.chdir('build'); shutil.make_archive('../search-light@icedman.github.com', 'zip', '.');"; \
+	fi
 
 install-zip: publish
 	echo "installing zip..."
@@ -82,7 +85,10 @@ test-shell: install
 	rm /run/user/1000/gnome-shell-disable-extensions
 
 lint:
-	eslint ./
+	ESLINT_USE_FLAT_CONFIG=false npx --yes eslint@8.57.0 -c .eslintrc.yml ./
+
+test: build lint
+	@echo "OK: schema compile and lint passed."
 
 xml-lint:
 	cd ui ; \
