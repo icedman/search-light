@@ -230,7 +230,8 @@ export let PrefKeys = class {
           break;
         }
         case 'switch': {
-          key.object.set_active(key.default_value);
+          // Do not set_active(default_value) here: it runs before connectSettings
+          // and emits state-set, which writes defaults over real GSettings values.
           signal_id = key.object.connect('state-set', (w) => {
             let value = w.get_active();
             this.setValue(name, value);

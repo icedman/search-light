@@ -1,5 +1,13 @@
 ## ROADMAP
 
+## release 39
+
+* add GNOME 50 support (`shell-version` in metadata)
+* Makefile: run nested shell tests with `gnome-shell --devkit` instead of `--nested`
+* extension: drop `affectsInputRegion` when adding chrome (GNOME 50)
+* fix preferences: switch toggles no longer overwrite saved GSettings on load
+* fix shortcut editor: attach key controller only when creating the accelerator window
+
 ## release 38
 
 * fork gnome 48 from 47

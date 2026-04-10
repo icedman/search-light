@@ -53,8 +53,6 @@ export let ShortcutSettingWidget = class extends Gtk.Button {
   }
 
   _onActivated(widget) {
-    let ctl = new Gtk.EventControllerKey();
-
     if (!this._editor) {
       this._editor = new Gtk.Window({
         title: 'Accelerator',
@@ -65,10 +63,11 @@ export let ShortcutSettingWidget = class extends Gtk.Button {
         height_request: 320,
         child: this.content,
       });
+      let ctl = new Gtk.EventControllerKey();
+      ctl.connect('key-pressed', this._onKeyPressed.bind(this));
+      this._editor.add_controller(ctl);
     }
 
-    this._editor.add_controller(ctl);
-    ctl.connect('key-pressed', this._onKeyPressed.bind(this));
     this._editor.present();
   }
 
