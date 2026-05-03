@@ -23,7 +23,10 @@ export const KeyboardShortcuts = class {
   }
 
   listenFor(accelerator, callback) {
-    let action = global.display.grab_accelerator(accelerator, 0);
+    let action = global.display.grab_accelerator(
+      accelerator,
+      Meta.KeyBindingFlags.IGNORE_AUTOREPEAT,
+    );
     if (action == Meta.KeyBindingAction.NONE) {
       console.log(`Unable to grab accelerator ${accelerator}`);
       return;
