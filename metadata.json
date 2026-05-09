@@ -8,5 +8,5 @@
   "url": "https://github.com/icedman/search-light",
   "schema-id": "org.gnome.shell.extensions.search-light",
   "gettext-domain": "search-light",
-  "version": 100
+  "version": 101
 }
