@@ -28,6 +28,7 @@ publish:
 	rm -rf ./build/drawing.js
 	rm -rf ./build/chamfer.js
 	rm -rf ./build/imports_*
+	rm -rf ./build/schemas/*.compiled
 	rm -rf ./*.zip
 	cd build ; \
 	zip -qr ../search-light@icedman.github.com.zip .
