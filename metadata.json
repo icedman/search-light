@@ -5,7 +5,7 @@
   "shell-version": [
     "48", "49", "50"
   ],
-  "url": "https://github.com/theDavidCoen/search-light",
+  "url": "https://github.com/icedman/search-light",
   "settings-schema": "org.gnome.shell.extensions.search-light",
   "gettext-domain": "search-light",
   "version": 101
