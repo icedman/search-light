@@ -64,6 +64,9 @@ export default class SearchLightExt extends Extension {
     /** Bindings torn down on hide(); must not reuse `this` (session signals use `this`) */
     this._overlayLifeCycle = {};
 
+    /** See hide(): never disconnect overlay signals synchronously from their handlers */
+    this._pendingHideIdle = 0;
+
     this._style = new Style();
 
     this._hiTimer = new Timer('hi-res timer');
@@ -148,7 +151,7 @@ export default class SearchLightExt extends Extension {
       can_focus: true,
     });
 
-    this.hide();
+    this.hide({ sync: true });
     this.container._delegate = this;
 
     Main.layoutManager.addChrome(this.mainContainer, {
@@ -166,7 +169,7 @@ export default class SearchLightExt extends Extension {
     this.accel2.enable();
 
     this._updateShortcut();
-    this._updateShortcut2();
+
     this._updateCss();
 
     this._useAnimations = this._settings.get_boolean('use-animations');
@@ -225,6 +228,8 @@ export default class SearchLightExt extends Extension {
   }
 
   disable() {
+    this._cancelPendingHideIdle();
+
     this._remove_overlay_events();
     this._remove_session_events();
     this._release_ui();
@@ -457,6 +462,8 @@ export default class SearchLightExt extends Extension {
   show() {
     if (Main.overview.visible) return;
 
+    this._cancelPendingHideIdle();
+
     if (this._animSeq) {
       this._hiTimer.cancel(this._animSeq);
       this._animSeq = null;
@@ -506,11 +513,14 @@ export default class SearchLightExt extends Extension {
     }, 100);
   }
 
-  hide() {
-    if (this._isDraggingIcon()) {
-      return;
+  _cancelPendingHideIdle() {
+    if (this._pendingHideIdle) {
+      GLib.source_remove(this._pendingHideIdle);
+      this._pendingHideIdle = 0;
     }
+  }
 
+  _hideRunBody() {
     this._release_ui();
     this._remove_overlay_events();
 
@@ -524,17 +534,50 @@ export default class SearchLightExt extends Extension {
         duration: this._animationSpeed,
         mode: Clutter.AnimationMode.EASE_OUT,
         onComplete: () => {
+          if (!this.mainContainer) return;
           this._visible = false;
           this.mainContainer.hide();
           this._enableUnredirect();
         },
       });
     } else {
-      this.mainContainer.opacity = 0;
+      if (this.mainContainer) {
+        this.mainContainer.opacity = 0;
+        this.mainContainer.hide();
+      }
       this._visible = false;
-      this.mainContainer.hide();
       this._enableUnredirect();
     }
+  }
+
+  /**
+   * Use `sync` only for startup (enable) when no overlay signals are connected.
+   * Otherwise deferred so we never disconnect notify::key-focus from inside its handler.
+   */
+  hide(options = {}) {
+    if (this._isDraggingIcon()) {
+      return;
+    }
+
+    if (options.sync) {
+      this._cancelPendingHideIdle();
+      if (!this.mainContainer) return;
+      this._hideRunBody();
+      return;
+    }
+
+    if (this._pendingHideIdle) return;
+
+    this._pendingHideIdle = GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
+      this._pendingHideIdle = 0;
+
+      if (!this.mainContainer) return GLib.SOURCE_REMOVE;
+
+      this._hideRunBody();
+
+      return GLib.SOURCE_REMOVE;
+    });
+
     // this._hidePopups();
   }
 
@@ -624,36 +667,47 @@ export default class SearchLightExt extends Extension {
     }
   }
 
-  _updateShortcut(disable) {
-    this.accel.unlisten();
-
+  _normalizedShortcut(settingValue, fallbackAccel) {
     let shortcut = '';
     try {
-      shortcut = (this.shortcut_search || []).join('');
+      shortcut = (settingValue || []).join('');
     } catch (err) {
       //
     }
-    if (shortcut == '') {
-      shortcut = '<Control><Super>Space';
-    }
+    if (shortcut == '') shortcut = fallbackAccel;
+    return shortcut;
+  }
+
+  _updateShortcut(disable) {
+    this.accel.unlisten();
+
+    const shortcut = this._normalizedShortcut(
+      this.shortcut_search,
+      '<Control><Super>Space',
+    );
 
     if (!disable) {
       this.accel.listenFor(shortcut, this._toggle_search_light.bind(this));
     }
+
+    /** Secondary must react if it duplicated primary */
+    this._updateShortcut2(disable);
   }
 
   _updateShortcut2(disable) {
     this.accel2.unlisten();
 
-    let shortcut = '';
-    try {
-      shortcut = (this.secondary_shortcut_search || []).join('');
-    } catch (err) {
-      //
-    }
-    if (shortcut == '') {
-      shortcut = '<Control><Super>Space';
-    }
+    const primary = this._normalizedShortcut(
+      this.shortcut_search,
+      '<Control><Super>Space',
+    );
+    let shortcut = this._normalizedShortcut(
+      this.secondary_shortcut_search,
+      '<Control><Super>Space',
+    );
+
+    /** Two grabs of the same accelerator fire twice per keypress (re-entrancy / WM issues) */
+    if (shortcut === primary) return;
 
     if (!disable) {
       this.accel2.listenFor(shortcut, this._toggle_search_light.bind(this));
@@ -957,7 +1011,8 @@ export default class SearchLightExt extends Extension {
         global.stage.set_key_focus(this._entry);
       }
     } else {
-      global.stage.set_key_focus(null);
+      /** Avoid set_key_focus(null) firing hide from notify::focus while toggling — use hide()'s deferred path */
+      this.hide();
     }
   }
 
