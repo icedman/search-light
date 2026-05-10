@@ -59,7 +59,11 @@ var SearchLight = GObject.registerClass(
 export default class SearchLightExt extends Extension {
   enable() {
     Main.overview.graphene = Graphene;
-    
+
+    this._stageKeyPressId = 0;
+    /** Bindings torn down on hide(); must not reuse `this` (session signals use `this`) */
+    this._overlayLifeCycle = {};
+
     this._style = new Style();
 
     this._hiTimer = new Timer('hi-res timer');
@@ -221,6 +225,20 @@ export default class SearchLightExt extends Extension {
   }
 
   disable() {
+    this._remove_overlay_events();
+    this._remove_session_events();
+    this._release_ui();
+    try {
+      this._enableUnredirect();
+    } catch (e) {
+      /* noop */
+    }
+    if (this.mainContainer) {
+      this.mainContainer.hide();
+      this.mainContainer.opacity = 0;
+    }
+    this._visible = false;
+
     this._hiTimer?.shutdown();
     this._loTimer?.shutdown();
     this._hiTimer = null;
@@ -446,14 +464,15 @@ export default class SearchLightExt extends Extension {
     this._acquire_ui();
 
     if (this._bgActor) {
-      let bgSource = Main.layoutManager._backgroundGroup.get_child_at_index(0);
-      this._bgActor.set_content(bgSource.get_content());
+      let bgSource =
+        Main.layoutManager._backgroundGroup?.get_child_at_index(0);
+      if (bgSource?.get_content) this._bgActor.set_content(bgSource.get_content());
     }
 
     this._updateCss();
     this._layout();
 
-    global.compositor.disable_unredirect();
+    this._disableUnredirect();
 
     this.mainContainer.show();
     this.container.show();
@@ -493,7 +512,7 @@ export default class SearchLightExt extends Extension {
     }
 
     this._release_ui();
-    this._remove_events();
+    this._remove_overlay_events();
 
     if (this._useAnimations) {
       this.mainContainer.ease({
@@ -507,14 +526,14 @@ export default class SearchLightExt extends Extension {
         onComplete: () => {
           this._visible = false;
           this.mainContainer.hide();
-          global.compositor.enable_unredirect();
+          this._enableUnredirect();
         },
       });
     } else {
       this.mainContainer.opacity = 0;
       this._visible = false;
       this.mainContainer.hide();
-      global.compositor.enable_unredirect();
+      this._enableUnredirect();
     }
     // this._hidePopups();
   }
@@ -575,6 +594,7 @@ export default class SearchLightExt extends Extension {
     // this.initial_height += font_size * 2 * this.scaleFactor;
     // console.log(`${this.initial_height} ${this._entry.height}`);
 
+    if (!this._entry) return;
     this.initial_height = this._entry.height + 4 * this.scaleFactor;
 
     // position
@@ -638,6 +658,26 @@ export default class SearchLightExt extends Extension {
     if (!disable) {
       this.accel2.listenFor(shortcut, this._toggle_search_light.bind(this));
     }
+  }
+
+  _disableUnredirect() {
+    if (Meta.disable_unredirect_for_display !== undefined)
+      Meta.disable_unredirect_for_display(global.display);
+    else if (
+      global.compositor &&
+      global.compositor.disable_unredirect !== undefined
+    )
+      global.compositor.disable_unredirect();
+  }
+
+  _enableUnredirect() {
+    if (Meta.enable_unredirect_for_display !== undefined)
+      Meta.enable_unredirect_for_display(global.display);
+    else if (
+      global.compositor &&
+      global.compositor.enable_unredirect !== undefined
+    )
+      global.compositor.enable_unredirect();
   }
 
   _queryDisplay() {
@@ -925,23 +965,39 @@ export default class SearchLightExt extends Extension {
     global.stage.connectObject(
       'notify::key-focus',
       this._onKeyFocusChanged.bind(this),
-      'key-press-event',
-      this._onKeyPressed.bind(this),
-      this,
+      this._overlayLifeCycle,
     );
+
+    /** After default handling so WM/global shortcuts (e.g. Super+D) keep working */
+    if (!this._stageKeyPressId) {
+      this._stageKeyPressId = global.stage.connect_after(
+        'key-press-event',
+        this._onKeyPressed.bind(this),
+      );
+    }
 
     global.display.connectObject(
       'notify::focus-window',
       this._onFocusWindow.bind(this),
       'in-fullscreen-changed',
       this._onFullScreen.bind(this),
-      this,
+      this._overlayLifeCycle,
     );
   }
 
-  _remove_events() {
+  /** Stage + display handlers only while the overlay is shown */
+  _remove_overlay_events() {
+    if (this._stageKeyPressId) {
+      global.stage.disconnect(this._stageKeyPressId);
+      this._stageKeyPressId = 0;
+    }
+    global.stage.disconnectObject(this._overlayLifeCycle);
+    global.display.disconnectObject(this._overlayLifeCycle);
+  }
+
+  /** Handlers that live for the whole extension enable */
+  _remove_session_events() {
     global.display.disconnectObject(this);
-    global.stage.disconnectObject(this);
     Main.overview.disconnectObject(this);
     Shell.AppSystem.get_default().disconnectObject(this);
   }
@@ -996,7 +1052,9 @@ export default class SearchLightExt extends Extension {
     if (!this._entry) return;
     let focus = global.stage.get_key_focus();
     let appearFocused =
-      focus && (this._entry.contains(focus) || this._searchResults.contains(focus));
+      focus &&
+      (this._entry.contains(focus) ||
+        (this._searchResults && this._searchResults.contains(focus)));
 
     if (!appearFocused) {
       // popups are not handled well.. hide immediately
@@ -1024,18 +1082,38 @@ export default class SearchLightExt extends Extension {
     }
   }
 
+  _modifiersPropagateGlobally(evt) {
+    /** Logo is often MOD4_MASK on Linux even when SUPER_MASK is unset */
+    const st = evt.get_state();
+    return (
+      (st & Clutter.ModifierType.SUPER_MASK) !== 0 ||
+      (st & Clutter.ModifierType.MOD4_MASK) !== 0
+    );
+  }
+
   _onKeyPressed(obj, evt) {
-    if (!this._entry) return;
-    let focus = global.stage.get_key_focus();
-    if (!focus || !this._entry.contains(focus)) {
+    if (!this._entry) return Clutter.EVENT_PROPAGATE;
+
+    /** Super/Meta combos are handled below WM level; don't swallow them here */
+    if (this._modifiersPropagateGlobally(evt)) return Clutter.EVENT_PROPAGATE;
+
+    const focus = global.stage.get_key_focus();
+    const inSearch =
+      focus &&
+      (this._entry.contains(focus) ||
+        (this._searchResults && this._searchResults.contains(focus)));
+
+    if (!inSearch) {
       if (evt.get_key_symbol() === Clutter.KEY_Escape) {
         this.hide();
         return Clutter.EVENT_STOP;
       }
       this._search._text.get_parent().grab_key_focus();
+      /** Plain keys only: reclaim search focus */
+      return Clutter.EVENT_STOP;
     }
 
-    return Clutter.EVENT_STOP;
+    return Clutter.EVENT_PROPAGATE;
   }
 
   _onFullScreen() {
