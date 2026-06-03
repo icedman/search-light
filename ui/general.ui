@@ -120,6 +120,25 @@
         </child>
       </object>
     </child>
+    <child>
+      <object class="AdwPreferencesGroup" id="blacklist-group">
+        <property name="title" translatable="yes">Application Blacklist</property>
+        <property name="description" translatable="yes">Applications where the shortcut is disabled when focused.</property>
+        <child>
+          <object class="AdwActionRow" id="blacklist-apps-row">
+            <property name="title" translatable="yes">Blacklisted Apps</property>
+            <property name="subtitle" translatable="yes">Add applications to suppress the search shortcut (e.g. games).</property>
+            <child>
+              <object class="GtkButton" id="blacklist-add-btn">
+                <property name="icon-name">list-add-symbolic</property>
+                <property name="valign">center</property>
+                <property name="tooltip-text" translatable="yes">Add application</property>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
   </object>
   <object class="GtkStringList" id="preferred-monitor-model">
     <items>

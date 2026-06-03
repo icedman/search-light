@@ -96,10 +96,10 @@ export default class SearchLightExt extends Extension {
         case 'border-radius':
           break;
         case 'shortcut-search':
-          this._updateShortcut();
+          if (this._shortcutsGrabbed) this._updateShortcut();
           break;
         case 'secondary-shortcut-search':
-          this._updateShortcut2();
+          if (this._shortcutsGrabbed) this._updateShortcut2();
           break;
         case 'window-effect': {
           this._updateWindowEffect();
@@ -163,10 +163,16 @@ export default class SearchLightExt extends Extension {
 
     this._updateShortcut();
     this._updateShortcut2();
+    this._shortcutsGrabbed = true;
     this._updateCss();
 
     this._useAnimations = this._settings.get_boolean('use-animations');
     this._animationSpeed = this._settings.get_double('animation-speed');
+
+    this._focusWindowId = global.display.connect(
+      'notify::focus-window',
+      this._onFocusWindowChanged.bind(this),
+    );
 
     Main.overview.connectObject(
       'overview-showing',
@@ -222,6 +228,11 @@ export default class SearchLightExt extends Extension {
   }
 
   disable() {
+    if (this._focusWindowId) {
+      global.display.disconnect(this._focusWindowId);
+      this._focusWindowId = null;
+    }
+
     this._hiTimer?.shutdown();
     this._loTimer?.shutdown();
     this._hiTimer = null;
@@ -892,6 +903,43 @@ export default class SearchLightExt extends Extension {
 
     // console.log(styles);
     this._style.build('custom-search-light', styles);
+  }
+
+  _isFocusedAppBlacklisted() {
+    let dominated = this.blacklist_apps || [];
+    if (dominated.length === 0) return false;
+
+    let focusWindow = global.display.focus_window;
+    if (!focusWindow) return false;
+
+    let tracker = Shell.WindowTracker.get_default();
+    let app = tracker.get_window_app(focusWindow);
+    if (!app) return false;
+
+    let appId = app.get_id();
+    return dominated.includes(appId);
+  }
+
+  _onFocusWindowChanged() {
+    if (this._isFocusedAppBlacklisted()) {
+      this._ungrabShortcuts();
+    } else {
+      this._regrabShortcuts();
+    }
+  }
+
+  _ungrabShortcuts() {
+    if (this._shortcutsGrabbed === false) return;
+    this._shortcutsGrabbed = false;
+    this.accel.unlisten();
+    this.accel2.unlisten();
+  }
+
+  _regrabShortcuts() {
+    if (this._shortcutsGrabbed === true) return;
+    this._shortcutsGrabbed = true;
+    this._updateShortcut();
+    this._updateShortcut2();
   }
 
   _toggle_search_light() {

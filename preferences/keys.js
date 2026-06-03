@@ -115,6 +115,10 @@ export const SettingsKeys = () => {
       default_value: 100,
       widget_type: 'scale',
     },
+    'blacklist-apps': {
+      default_value: [],
+      widget_type: 'shortcut',
+    },
   });
 
   return settingsKeys;
