@@ -132,5 +132,10 @@
 	<summary>Animation speed</summary>
 	<description>Change the speed of the appear and disappear window effect.</description>
     </key>
+    <key type="as" name="blacklist-apps">
+        <default><![CDATA[[]]]></default>
+        <summary>Blacklisted applications</summary>
+        <description>List of application IDs where the shortcut is disabled when they have focus.</description>
+    </key>
   </schema>
 </schemalist>
