@@ -752,6 +752,7 @@ export default class SearchLightExt extends Extension {
   _release_ui() {
     if (this._entry) {
       if (this._entry.get_parent()) {
+        this._entry.hide();
         this._entry.get_parent().remove_child(this._entry);
       }
       this._entryParent.add_child(this._entry);
