@@ -281,7 +281,20 @@ export default class SearchLightExt extends Extension {
     this._indicator.set_child(icon);
     this._indicator.connectObject(
       'button-press-event',
-      this._toggle_search_light.bind(this),
+      () => {
+        // Defer the toggle out of the press gesture's handler: show()
+        // reparents the entry/search actors and grabs key focus, and doing
+        // that synchronously while the Clutter press gesture is in flight
+        // corrupts its state machine on GNOME 48+ (Clutter 18), aborting the
+        // shell with clutter-gesture.c:set_state assertion (new_state ==
+        // CLUTTER_GESTURE_STATE_POSSIBLE). idle_add lets the gesture finish
+        // first (imperceptible, one tick).
+        GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
+          this._toggle_search_light();
+          return GLib.SOURCE_REMOVE;
+        });
+        return Clutter.EVENT_STOP;
+      },
       this,
     );
     try {
