@@ -491,9 +491,19 @@ export default class SearchLightExt extends Extension {
     if (this._isDraggingIcon()) {
       return;
     }
+    // Re-entrancy guard: _release_ui() hides the entry, which flips the
+    // stage key-focus -> _onKeyFocusChanged -> hide() again, re-entering
+    // teardown while the first pass is still mid-unmap -> Clutter aborts
+    // with clutter_actor_real_unrealize "!clutter_actor_is_mapped". Make
+    // the re-entrant hide() a no-op so teardown runs exactly once.
+    if (this._hiding) {
+      return;
+    }
+    this._hiding = true;
 
     this._release_ui();
     this._remove_events();
+    this._hiding = false;
 
     if (this._useAnimations) {
       this.mainContainer.ease({
@@ -752,6 +762,7 @@ export default class SearchLightExt extends Extension {
   _release_ui() {
     if (this._entry) {
       if (this._entry.get_parent()) {
+        this._entry.hide();
         this._entry.get_parent().remove_child(this._entry);
       }
       this._entryParent.add_child(this._entry);
