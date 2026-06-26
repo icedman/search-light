@@ -492,6 +492,11 @@ export default class SearchLightExt extends Extension {
       return;
     }
 
+    if (this._animSeq) {
+      this._hiTimer.cancel(this._animSeq);
+      this._animSeq = null;
+    }
+
     this._release_ui();
     this._remove_events();
 
