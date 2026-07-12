@@ -335,7 +335,15 @@ export default class SearchLightExt extends Extension {
       //   let a = Math.floor(100 - color[3] * 100);
       //   let rgb = this._style.hex(color);
       // 	 let cmd = `convert -scale 10% -blur 0x2.5 -resize 200% -fill "${rgb}" -tint ${a} "${bg}" ${this.desktop_background_blurred}`;
-      let cmd = `convert -scale 10% -blur 0x2.5 -resize 200% "${this.desktop_background}" ${this.desktop_background_blurred}`;
+      // picture-uri is a file:// URI; decode it (spaces etc. are
+      // percent-encoded) before handing the path to imagemagick
+      let bgPath = this.desktop_background;
+      try {
+        [bgPath] = GLib.filename_from_uri(this.desktop_background);
+      } catch (err) {
+        // not a file:// URI; use as-is
+      }
+      let cmd = `convert -scale 10% -blur 0x2.5 -resize 200% "${bgPath}" ${this.desktop_background_blurred}`;
       console.log(cmd);
       trySpawnCommandLine(cmd);
     }
