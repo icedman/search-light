@@ -134,6 +134,9 @@ export default class SearchLightExt extends Extension {
       this,
     );
 
+    this._showSession = {};
+    this._hiding = false;
+
     this.mainContainer = new SearchLight();
     this.mainContainer._delegate = this;
     this.container = new St.BoxLayout({
@@ -169,9 +172,9 @@ export default class SearchLightExt extends Extension {
     this._animationSpeed = this._settings.get_double('animation-speed');
 
     Main.overview.connectObject(
-      'overview-showing',
+      'showing',
       this._onOverviewShowing.bind(this),
-      'overview-hidden',
+      'hidden',
       this._onOverviewHidden.bind(this),
       this,
     );
@@ -264,6 +267,13 @@ export default class SearchLightExt extends Extension {
       this._background = null;
     }
 
+    this._hideClickCatcher();
+
+    if (this._clickCatcher) {
+      this._clickCatcher.destroy();
+      this._clickCatcher = null;
+    }
+
     Main.layoutManager.removeChrome(this.mainContainer);
     this.mainContainer = null;
   }
@@ -281,7 +291,10 @@ export default class SearchLightExt extends Extension {
     this._indicator.set_child(icon);
     this._indicator.connectObject(
       'button-press-event',
-      this._toggle_search_light.bind(this),
+      () => {
+        this._defer(() => this._toggle_search_light());
+        return Clutter.EVENT_STOP;
+      },
       this,
     );
     try {
@@ -410,10 +423,15 @@ export default class SearchLightExt extends Extension {
     let background = new St.Widget({
       name: 'searchLightBlurredBackground',
       layout_manager: new Clutter.BinLayout(),
+      reactive: true,
       x: 0,
       y: 0,
       width: 20,
       height: 20,
+    });
+    background.connect('button-press-event', () => {
+      this._deferHide();
+      return Clutter.EVENT_STOP;
     });
 
     // let image = new St.Widget({
@@ -457,6 +475,7 @@ export default class SearchLightExt extends Extension {
 
     this.mainContainer.show();
     this.container.show();
+    this._showClickCatcher();
     this._add_events();
 
     // fixes the background size relative to text - after adjusting font size
@@ -488,33 +507,39 @@ export default class SearchLightExt extends Extension {
   }
 
   hide() {
-    if (this._isDraggingIcon()) {
+    if (this._hiding || this._isDraggingIcon()) {
       return;
     }
 
-    this._release_ui();
-    this._remove_events();
+    this._hiding = true;
+    try {
+      this._release_ui();
+      this._remove_events();
+      this._hideClickCatcher();
 
-    if (this._useAnimations) {
-      this.mainContainer.ease({
-        opacity: 0,
-        scale_x: 0.9,
-        scale_y: 0.9,
-        translation_x: (this.width * 0.1) / 2,
-        translation_y: (this.height * 0.1) / 2,
-        duration: this._animationSpeed,
-        mode: Clutter.AnimationMode.EASE_OUT,
-        onComplete: () => {
-          this._visible = false;
-          this.mainContainer.hide();
-          global.compositor.enable_unredirect();
-        },
-      });
-    } else {
-      this.mainContainer.opacity = 0;
-      this._visible = false;
-      this.mainContainer.hide();
-      global.compositor.enable_unredirect();
+      if (this._useAnimations) {
+        this.mainContainer.ease({
+          opacity: 0,
+          scale_x: 0.9,
+          scale_y: 0.9,
+          translation_x: (this.width * 0.1) / 2,
+          translation_y: (this.height * 0.1) / 2,
+          duration: this._animationSpeed,
+          mode: Clutter.AnimationMode.EASE_OUT,
+          onComplete: () => {
+            this._visible = false;
+            this.mainContainer.hide();
+            global.compositor.enable_unredirect();
+          },
+        });
+      } else {
+        this.mainContainer.opacity = 0;
+        this._visible = false;
+        this.mainContainer.hide();
+        global.compositor.enable_unredirect();
+      }
+    } finally {
+      this._hiding = false;
     }
     // this._hidePopups();
   }
@@ -751,6 +776,7 @@ export default class SearchLightExt extends Extension {
 
   _release_ui() {
     if (this._entry) {
+      this._entry.hide();
       if (this._entry.get_parent()) {
         this._entry.get_parent().remove_child(this._entry);
       }
@@ -909,16 +935,83 @@ export default class SearchLightExt extends Extension {
     this._style.build('custom-search-light', styles);
   }
 
-  _toggle_search_light() {
-    if (this._inOverview) return;
-    if (!this._visible) {
-      this.show();
-      if (this._entry) {
-        global.stage.set_key_focus(this._entry);
+  _defer(callback) {
+    GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
+      if (!this.mainContainer) {
+        return GLib.SOURCE_REMOVE;
       }
-    } else {
-      global.stage.set_key_focus(null);
+      callback();
+      return GLib.SOURCE_REMOVE;
+    });
+  }
+
+  _deferHide() {
+    this._defer(() => this.hide());
+  }
+
+  _setupClickCatcher() {
+    if (this._clickCatcher) {
+      return;
     }
+
+    this._clickCatcher = new St.Widget({
+      name: 'searchLightClickCatcher',
+      reactive: true,
+      can_focus: false,
+    });
+    this._clickCatcher.connect('button-press-event', () => {
+      this._deferHide();
+      return Clutter.EVENT_STOP;
+    });
+  }
+
+  _showClickCatcher() {
+    this._setupClickCatcher();
+    this._queryDisplay();
+    if (!this.monitor) {
+      return;
+    }
+
+    this._clickCatcher.set_position(this.monitor.x, this.monitor.y);
+    this._clickCatcher.set_size(this.monitor.width, this.monitor.height);
+
+    if (!this._clickCatcher.get_parent()) {
+      Main.layoutManager.addChrome(this._clickCatcher, {
+        affectsStruts: false,
+        trackFullscreen: false,
+      });
+      Main.layoutManager.uiGroup.set_child_below_sibling(
+        this._clickCatcher,
+        this.mainContainer,
+      );
+    }
+
+    this._clickCatcher.show();
+  }
+
+  _hideClickCatcher() {
+    if (!this._clickCatcher?.get_parent()) {
+      return;
+    }
+
+    this._clickCatcher.hide();
+    Main.layoutManager.removeChrome(this._clickCatcher);
+  }
+
+  _toggle_search_light() {
+    this._defer(() => {
+      if (this._inOverview) {
+        return;
+      }
+      if (!this._visible) {
+        this.show();
+        if (this._entry) {
+          global.stage.set_key_focus(this._entry);
+        }
+      } else {
+        global.stage.set_key_focus(null);
+      }
+    });
   }
 
   _add_events() {
@@ -927,7 +1020,7 @@ export default class SearchLightExt extends Extension {
       this._onKeyFocusChanged.bind(this),
       'key-press-event',
       this._onKeyPressed.bind(this),
-      this,
+      this._showSession,
     );
 
     global.display.connectObject(
@@ -935,15 +1028,13 @@ export default class SearchLightExt extends Extension {
       this._onFocusWindow.bind(this),
       'in-fullscreen-changed',
       this._onFullScreen.bind(this),
-      this,
+      this._showSession,
     );
   }
 
   _remove_events() {
-    global.display.disconnectObject(this);
-    global.stage.disconnectObject(this);
-    Main.overview.disconnectObject(this);
-    Shell.AppSystem.get_default().disconnectObject(this);
+    global.display.disconnectObject(this._showSession);
+    global.stage.disconnectObject(this._showSession);
   }
 
   _onOverviewShowing() {
@@ -1009,7 +1100,7 @@ export default class SearchLightExt extends Extension {
         this._hidePopups();
       }
 
-      this.hide();
+      this._deferHide();
     }
 
     // hide window immediately when activated
@@ -1029,7 +1120,7 @@ export default class SearchLightExt extends Extension {
     let focus = global.stage.get_key_focus();
     if (!focus || !this._entry.contains(focus)) {
       if (evt.get_key_symbol() === Clutter.KEY_Escape) {
-        this.hide();
+        this._deferHide();
         return Clutter.EVENT_STOP;
       }
       this._search._text.get_parent().grab_key_focus();
@@ -1039,6 +1130,6 @@ export default class SearchLightExt extends Extension {
   }
 
   _onFullScreen() {
-    this.hide();
+    this._deferHide();
   }
 }
