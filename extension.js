@@ -136,6 +136,7 @@ export default class SearchLightExt extends Extension {
 
     this._showSession = {};
     this._hiding = false;
+    this._visible = false;
 
     this.mainContainer = new SearchLight();
     this.mainContainer._delegate = this;
@@ -189,7 +190,7 @@ export default class SearchLightExt extends Extension {
       'window-created',
       (display, win) => {
         if (this._visible) {
-          this.mainContainer.opacity = 0;
+          this._deferHide();
         }
       },
       this,
@@ -221,6 +222,7 @@ export default class SearchLightExt extends Extension {
     this._updateProviders();
     this._updateWindowEffect();
     this._updateBlurredBackground();
+    this._ensureHidden();
   }
 
   disable() {
@@ -473,6 +475,7 @@ export default class SearchLightExt extends Extension {
 
     global.compositor.disable_unredirect();
 
+    this._restoreInputCapture();
     this.mainContainer.show();
     this.container.show();
     this._showClickCatcher();
@@ -513,9 +516,13 @@ export default class SearchLightExt extends Extension {
 
     this._hiding = true;
     try {
+      if (this._animSeq) {
+        this._hiTimer.cancel(this._animSeq);
+        this._animSeq = null;
+      }
+
       this._release_ui();
-      this._remove_events();
-      this._hideClickCatcher();
+      this._releaseInputCapture();
 
       if (this._useAnimations) {
         this.mainContainer.ease({
@@ -527,21 +534,63 @@ export default class SearchLightExt extends Extension {
           duration: this._animationSpeed,
           mode: Clutter.AnimationMode.EASE_OUT,
           onComplete: () => {
-            this._visible = false;
-            this.mainContainer.hide();
-            global.compositor.enable_unredirect();
+            this._finishHide();
           },
         });
       } else {
         this.mainContainer.opacity = 0;
-        this._visible = false;
-        this.mainContainer.hide();
-        global.compositor.enable_unredirect();
+        this._finishHide();
       }
     } finally {
       this._hiding = false;
     }
     // this._hidePopups();
+  }
+
+  _finishHide() {
+    this._visible = false;
+    if (this.mainContainer) {
+      this.mainContainer.hide();
+    }
+    global.compositor.enable_unredirect();
+    this._ensureHidden();
+  }
+
+  _releaseInputCapture() {
+    this._hideClickCatcher();
+    this._remove_events();
+
+    if (this.container) {
+      this.container.reactive = false;
+      this.container.track_hover = false;
+    }
+
+    if (this._background) {
+      this._background.reactive = false;
+    }
+  }
+
+  _restoreInputCapture() {
+    if (this.container) {
+      this.container.reactive = true;
+      this.container.track_hover = true;
+    }
+
+    if (this._background) {
+      this._background.reactive = true;
+    }
+  }
+
+  _ensureHidden() {
+    this._visible = false;
+    this._hideClickCatcher();
+    this._remove_events();
+    this._releaseInputCapture();
+
+    if (this.mainContainer) {
+      this.mainContainer.opacity = 0;
+      this.mainContainer.hide();
+    }
   }
 
   _isDraggingIcon() {
@@ -716,7 +765,7 @@ export default class SearchLightExt extends Extension {
       Main.overview._hide = Main.overview.hide;
     }
     Main.overview.hide = () => {
-      this.mainContainer.opacity = 0;
+      this._deferHide();
       Main.overview._hide();
     };
 
@@ -739,8 +788,7 @@ export default class SearchLightExt extends Extension {
         this._searchResults.activateDefault;
     }
     this._searchResults.activateDefault = () => {
-      // hide window immediately when activated
-      this.mainContainer.opacity = 0;
+      this._deferHide();
       this._searchResults._activateDefault();
     };
 
@@ -974,6 +1022,7 @@ export default class SearchLightExt extends Extension {
 
     this._clickCatcher.set_position(this.monitor.x, this.monitor.y);
     this._clickCatcher.set_size(this.monitor.width, this.monitor.height);
+    this._clickCatcher.reactive = true;
 
     if (!this._clickCatcher.get_parent()) {
       Main.layoutManager.addChrome(this._clickCatcher, {
@@ -990,12 +1039,16 @@ export default class SearchLightExt extends Extension {
   }
 
   _hideClickCatcher() {
-    if (!this._clickCatcher?.get_parent()) {
+    if (!this._clickCatcher) {
       return;
     }
 
+    this._clickCatcher.reactive = false;
     this._clickCatcher.hide();
-    Main.layoutManager.removeChrome(this._clickCatcher);
+
+    if (this._clickCatcher.get_parent()) {
+      Main.layoutManager.removeChrome(this._clickCatcher);
+    }
   }
 
   _toggle_search_light() {
@@ -1048,7 +1101,7 @@ export default class SearchLightExt extends Extension {
   _onAppStateChanged(st) {
     this._lastAppState = st;
     if (this._visible) {
-      this.mainContainer.opacity = 0;
+      this._deferHide();
     }
   }
 
@@ -1108,7 +1161,7 @@ export default class SearchLightExt extends Extension {
       if (!focus._activate) {
         focus._activate = focus.activate;
         focus.activate = () => {
-          this.mainContainer.opacity = 0;
+          this._deferHide();
           focus._activate();
         };
       }
