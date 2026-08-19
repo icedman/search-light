@@ -21,7 +21,7 @@ This is a Gnome Shell extension that takes the apps search widget out of Overvie
 ### Notice
 
 * Gnome 50 ready for testing
-* Gnome 49 and prior will now be under gnome-49 branch
+* Gnome 49 and prior will now be under g49 branch
 * Gnome 48 port is ready for testing
 * Gnome 47 and prior will now be under gnome-47 branch
 * Gnome 46 port is ready for testing
