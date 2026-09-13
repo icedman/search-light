@@ -28,6 +28,9 @@ publish:
 	rm -rf ./build/drawing.js
 	rm -rf ./build/chamfer.js
 	rm -rf ./build/imports_*
+	# Never ship a stale compiled schema: the target machine regenerates it
+	# via `make build` (glib-compile-schemas) at install time.
+	rm -rf ./build/schemas/*.compiled
 	rm -rf ./*.zip
 	cd build ; \
 	zip -qr ../search-light@icedman.github.com.zip .
