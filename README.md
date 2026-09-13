@@ -20,7 +20,7 @@ This is a Gnome Shell extension that takes the apps search widget out of Overvie
 
 ### Notice
 
-* Gnome 48 ready for testing
+* GNOME 48, 49 and 50 supported (verified on Fedora 44 / GNOME 50.4 Wayland)
 * Gnome 47 and prior will now be numer gnome-47 branch
 * Gnome 46 port is ready for testing
 * Gnome 45 port is ready for testing

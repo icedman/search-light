@@ -126,13 +126,24 @@ export default class SearchLightExt extends Extension {
     this._desktopSettings = new Gio.Settings({
       schema_id: 'org.gnome.desktop.background',
     });
-    this._desktopSettings.connectObject(
-      'changed::picture-uri',
-      () => {
-        this._updateBlurredBackground();
-      },
-      this,
-    );
+    // GNOME 42+ has separate light/dark wallpapers; Fedora defaults to dark.
+    // Watch both so the blurred snapshot stays in sync on theme switches
+    // (GNOME 48/49/50). connectObject binds to `this` and is torn down in
+    // disable() via _disconnectPersistentSignals().
+    for (const key of ['picture-uri', 'picture-uri-dark']) {
+      try {
+        this._desktopSettings.connectObject(
+          `changed::${key}`,
+          () => {
+            this._updateBlurredBackground();
+          },
+          this,
+        );
+      } catch (err) {
+        // Older schemas may lack picture-uri-dark; light key is sufficient.
+        console.log(`search-light: cannot watch desktop ${key}: ${err}`);
+      }
+    }
 
     this.mainContainer = new SearchLight();
     this.mainContainer._delegate = this;
@@ -147,10 +158,23 @@ export default class SearchLightExt extends Extension {
     this.hide();
     this.container._delegate = this;
 
-    Main.layoutManager.addChrome(this.mainContainer, {
-      affectsStruts: false,
-      trackFullscreen: false,
-    });
+    // NB: `affectsInputRegion` was removed from addChrome in GNOME 50
+    // (mutter rejects unknown chrome params). Keep the param set minimal
+    // so the same code path works on 48/49/50.
+    try {
+      Main.layoutManager.addChrome(this.mainContainer, {
+        affectsStruts: false,
+        trackFullscreen: false,
+      });
+    } catch (err) {
+      console.log(`search-light: addChrome failed: ${err}`);
+      // Fall back to a bare addChrome so the popup still shows.
+      try {
+        Main.layoutManager.addChrome(this.mainContainer);
+      } catch (innerErr) {
+        console.log(`search-light: addChrome fallback failed: ${innerErr}`);
+      }
+    }
 
     this.mainContainer.add_child(this.container);
 
@@ -221,51 +245,138 @@ export default class SearchLightExt extends Extension {
   }
 
   disable() {
-    this._hiTimer?.shutdown();
-    this._loTimer?.shutdown();
+    // Idempotent teardown: disable() may run after a partial enable() or
+    // twice during session shutdown. Every step is guarded so one failure
+    // cannot leak the remaining actors, timers, or signal handlers.
+    try {
+      if (this._animSeq && this._hiTimer) this._hiTimer.cancel(this._animSeq);
+    } catch (err) {
+      console.log(`search-light: cannot cancel animation: ${err}`);
+    }
+    this._animSeq = null;
+
+    this._removeTransientEvents();
+    this._disconnectPersistentSignals();
+
+    // Restore any monkey-patched Overview methods before dropping actors.
+    this._release_ui();
+
+    try {
+      this._hiTimer?.shutdown();
+    } catch (err) {
+      console.log(`search-light: hi-timer shutdown: ${err}`);
+    }
+    try {
+      this._loTimer?.shutdown();
+    } catch (err) {
+      console.log(`search-light: lo-timer shutdown: ${err}`);
+    }
     this._hiTimer = null;
     this._loTimer = null;
 
     if (this._indicator) {
-      this._indicator.disconnectObject(this);
-      if (this._indicator.get_parent()) {
-        this._indicator.get_parent().remove_child(this._indicator);
+      try {
+        this._indicator.disconnectObject(this);
+      } catch {
+        // Already disconnected; safe to ignore.
+      }
+      try {
+        if (this._indicator.get_parent()) {
+          this._indicator.get_parent().remove_child(this._indicator);
+        }
+      } catch (err) {
+        console.log(`search-light: cannot remove indicator: ${err}`);
       }
       this._indicator = null;
     }
 
-    this._style.unloadAll();
+    try {
+      this._style?.unloadAll();
+    } catch (err) {
+      console.log(`search-light: style unload: ${err}`);
+    }
     this._style = null;
 
-    this._settingsKeys.disconnectSettings();
+    try {
+      this._settingsKeys?.disconnectSettings();
+    } catch (err) {
+      console.log(`search-light: settings disconnect: ${err}`);
+    }
     this._settings = null;
+    this._settingsKeys = null;
 
-    this._desktopSettings.disconnectObject();
-    this._desktopSettings = null;
-
-    if (this.accel) {
-      this.accel.disable();
-      delete this.accel;
-      this.accel = null;
-    }
-    if (this.accel2) {
-      this.accel2.disable();
-      delete this.accel2;
-      this.accel2 = null;
+    if (this._desktopSettings) {
+      try {
+        this._desktopSettings.disconnectObject(this);
+      } catch {
+        // Never connected or already torn down.
+      }
+      this._desktopSettings = null;
     }
 
-    this._removeProviders();
+    for (const key of ['accel', 'accel2']) {
+      if (this[key]) {
+        try {
+          this[key].disable();
+        } catch (err) {
+          console.log(`search-light: ${key} disable: ${err}`);
+        }
+        this[key] = null;
+      }
+    }
+
+    try {
+      this._removeProviders();
+    } catch (err) {
+      console.log(`search-light: remove providers: ${err}`);
+    }
     this._providers = null;
 
     if (this._background) {
-      if (this._background.get_parent()) {
-        this._background.get_parent().remove_child(this._background);
+      try {
+        if (this._background.get_parent()) {
+          this._background.get_parent().remove_child(this._background);
+        }
+      } catch (err) {
+        console.log(`search-light: cannot remove background: ${err}`);
       }
       this._background = null;
     }
 
-    Main.layoutManager.removeChrome(this.mainContainer);
-    this.mainContainer = null;
+    if (this.mainContainer) {
+      try {
+        Main.layoutManager.removeChrome(this.mainContainer);
+      } catch (err) {
+        console.log(`search-light: removeChrome: ${err}`);
+      }
+      this.mainContainer = null;
+    }
+    this.container = null;
+    this._visible = false;
+
+    if (Main.overview?.searchLight === this) {
+      Main.overview.searchLight = null;
+    }
+  }
+
+  /**
+   * Disconnect signals wired once in enable() (overview visibility,
+   * app-state, window-created). These must survive show()/hide() cycles —
+   * only disable() tears them down. Previously _remove_events() killed
+   * them on the first hide(), leaving the popup deaf afterwards.
+   */
+  _disconnectPersistentSignals() {
+    for (const target of [
+      Main.overview,
+      Shell.AppSystem.get_default(),
+      global.display,
+    ]) {
+      try {
+        target?.disconnectObject?.(this);
+      } catch {
+        // Not connected; ignore so one bad target can't block the rest.
+      }
+    }
   }
 
   _createIndicator() {
@@ -323,31 +434,113 @@ export default class SearchLightExt extends Extension {
     return effect;
   }
 
-  _updateBlurredBackground() {
-    this.desktop_background = this._desktopSettings.get_string('picture-uri');
-    
-    let uuid = GLib.get_user_name();
-    this.desktop_background_blurred = `/tmp/searchlight-${uuid}-bg-blurred.jpg`;
+  /**
+   * Resolve the active desktop wallpaper to a local filesystem path.
+   * Prefers the dark-mode URI when set (Fedora/GNOME 42+ default), falls
+   * back to the light URI. Strips the `file://` scheme and URI-decoding so
+   * the result can be handed to ImageMagick, which does not accept URIs.
+   * Returns '' when no usable wallpaper is configured.
+   */
+  _resolveDesktopBackground() {
+    if (!this._desktopSettings) return '';
 
-    if (this.blur_background) {
-      //   let color = this.background_color || [0, 0, 0, 0.5];
-      //   let bg = this._desktopSettings.get_string('picture-uri');
-      //   let a = Math.floor(100 - color[3] * 100);
-      //   let rgb = this._style.hex(color);
-      // 	 let cmd = `convert -scale 10% -blur 0x2.5 -resize 200% -fill "${rgb}" -tint ${a} "${bg}" ${this.desktop_background_blurred}`;
-      let cmd = `convert -scale 10% -blur 0x2.5 -resize 200% "${this.desktop_background}" ${this.desktop_background_blurred}`;
-      console.log(cmd);
-      trySpawnCommandLine(cmd);
+    let uri = '';
+    try {
+      const dark = this._desktopSettings.get_string('picture-uri-dark');
+      if (dark && dark !== "''" && dark !== '') uri = dark;
+    } catch {
+      // Schema without picture-uri-dark (pre-42); fall through to light key.
+    }
+    if (!uri) {
+      try {
+        uri = this._desktopSettings.get_string('picture-uri') || '';
+      } catch (err) {
+        console.log(`search-light: cannot read picture-uri: ${err}`);
+        return '';
+      }
+    }
+    if (!uri || uri === "''") return '';
+
+    // Strip quotes gsettings may include, then file:// scheme.
+    uri = uri.replace(/^'|'$/g, '');
+    if (uri.startsWith('file://')) {
+      try {
+        return GLib.filename_from_uri(uri)[0];
+      } catch {
+        uri = uri.replace(/^file:\/\//, '');
+      }
+    }
+    try {
+      return decodeURIComponent(uri);
+    } catch {
+      return uri;
     }
   }
 
+  /**
+   * Pick the ImageMagick entry point. v7 (`magick`) is preferred;
+   * Fedora 44 ships both but `convert` prints a deprecation warning and
+   * may vanish in future releases.
+   */
+  _blurCommandFor(src, dst) {
+    const magick = GLib.find_program_in_path('magick');
+    const convert = GLib.find_program_in_path('convert');
+    const bin = magick || convert;
+    if (!bin) return null;
+    // Quote paths: wallpapers commonly contain spaces (e.g. "Summer Day").
+    return `${bin} "${src}" -scale 10% -blur 0x2.5 -resize 200% "${dst}"`;
+  }
+
+  _updateBlurredBackground() {
+    this.desktop_background = this._resolveDesktopBackground();
+
+    const uuid = GLib.get_user_name();
+    this.desktop_background_blurred = `/tmp/searchlight-${uuid}-bg-blurred.jpg`;
+
+    if (!this.blur_background) return;
+    if (!this.desktop_background) {
+      console.log('search-light: no desktop background to blur; skipping');
+      return;
+    }
+    if (!Gio.File.new_for_path(this.desktop_background).query_exists(null)) {
+      console.log(
+        `search-light: background not found: ${this.desktop_background}`,
+      );
+      return;
+    }
+
+    const cmd = this._blurCommandFor(
+      this.desktop_background,
+      this.desktop_background_blurred,
+    );
+    if (!cmd) {
+      console.log('search-light: imagemagick not found; cannot blur');
+      return;
+    }
+    console.log(cmd);
+    trySpawnCommandLine(cmd);
+  }
+
   _updateWindowEffect() {
-    // this.window_effect = 2;
-    // this.window_effect_color = [1, 0, 0, 0.5];
-    this.container.remove_effect_by_name('window-effect');
-    let effect = this._createEffect(this.window_effect);
+    if (!this.container) return;
+    try {
+      this.container.remove_effect_by_name('window-effect');
+    } catch (err) {
+      console.log(`search-light: cannot remove window effect: ${err}`);
+    }
+    let effect = null;
+    try {
+      effect = this._createEffect(this.window_effect);
+    } catch (err) {
+      console.log(`search-light: cannot create window effect: ${err}`);
+    }
     if (effect) {
-      this.container.add_effect_with_name('window-effect', effect);
+      try {
+        this.container.add_effect_with_name('window-effect', effect);
+      } catch (err) {
+        console.log(`search-light: cannot add window effect: ${err}`);
+        effect = null;
+      }
     }
     this.windowEffect = effect;
   }
@@ -436,11 +629,35 @@ export default class SearchLightExt extends Extension {
     this._background.visible = false;
   }
 
-  show() {
-    if (Main.overview.visible) return;
+  /**
+   * Toggle fullscreen unredirect around the popup. On GNOME 50/Wayland this
+   * is a no-op but the API still exists; guard it so a future Mutter
+   * removal degrades to a warning instead of breaking show()/hide().
+   */
+  _setUnredirect(disable) {
+    try {
+      const compositor = global.compositor;
+      if (!compositor) return;
+      if (disable) {
+        compositor.disable_unredirect?.();
+      } else {
+        compositor.enable_unredirect?.();
+      }
+    } catch (err) {
+      console.log(`search-light: unredirect toggle failed: ${err}`);
+    }
+  }
 
-    if (this._animSeq) {
-      this._hiTimer.cancel(this._animSeq);
+  show() {
+    if (Main.overview?.visible) return;
+    if (!this.mainContainer || !this.container) return;
+
+    if (this._animSeq && this._hiTimer) {
+      try {
+        this._hiTimer.cancel(this._animSeq);
+      } catch (err) {
+        console.log(`search-light: cannot cancel animation: ${err}`);
+      }
       this._animSeq = null;
     }
     this._acquire_ui();
@@ -453,11 +670,11 @@ export default class SearchLightExt extends Extension {
     this._updateCss();
     this._layout();
 
-    global.compositor.disable_unredirect();
+    this._setUnredirect(true);
 
     this.mainContainer.show();
     this.container.show();
-    this._add_events();
+    this._addTransientEvents();
 
     // fixes the background size relative to text - after adjusting font size
     this._animSeq = this._hiTimer.runOnce(() => {
@@ -488,35 +705,57 @@ export default class SearchLightExt extends Extension {
   }
 
   hide() {
+    if (!this.mainContainer) return;
     if (this._isDraggingIcon()) {
       return;
     }
 
     this._release_ui();
-    this._remove_events();
+    this._removeTransientEvents();
 
     if (this._useAnimations) {
-      this.mainContainer.ease({
-        opacity: 0,
-        scale_x: 0.9,
-        scale_y: 0.9,
-        translation_x: (this.width * 0.1) / 2,
-        translation_y: (this.height * 0.1) / 2,
-        duration: this._animationSpeed,
-        mode: Clutter.AnimationMode.EASE_OUT,
-        onComplete: () => {
-          this._visible = false;
-          this.mainContainer.hide();
-          global.compositor.enable_unredirect();
-        },
-      });
+      try {
+        this.mainContainer.ease({
+          opacity: 0,
+          scale_x: 0.9,
+          scale_y: 0.9,
+          translation_x: (this.width * 0.1) / 2,
+          translation_y: (this.height * 0.1) / 2,
+          duration: this._animationSpeed,
+          mode: Clutter.AnimationMode.EASE_OUT,
+          onComplete: () => {
+            this._visible = false;
+            try {
+              this.mainContainer?.hide();
+            } catch (err) {
+              console.log(`search-light: hide onComplete: ${err}`);
+            }
+            this._setUnredirect(false);
+          },
+        });
+      } catch (err) {
+        // ease() can throw if the actor was destroyed mid-animation
+        // (fast logout on Wayland). Fall through to the instant path.
+        console.log(`search-light: hide animation failed: ${err}`);
+        this._hideInstant();
+      }
     } else {
-      this.mainContainer.opacity = 0;
-      this._visible = false;
-      this.mainContainer.hide();
-      global.compositor.enable_unredirect();
+      this._hideInstant();
     }
     // this._hidePopups();
+  }
+
+  _hideInstant() {
+    try {
+      if (this.mainContainer) {
+        this.mainContainer.opacity = 0;
+        this.mainContainer.hide();
+      }
+    } catch (err) {
+      console.log(`search-light: instant hide failed: ${err}`);
+    }
+    this._visible = false;
+    this._setUnredirect(false);
   }
 
   _isDraggingIcon() {
@@ -641,73 +880,113 @@ export default class SearchLightExt extends Extension {
   }
 
   _queryDisplay() {
+    const monitors = Main.layoutManager?.monitors || [];
+    if (!monitors.length) return;
+
     let idx = this.preferred_monitor || 0;
-    if (idx == 0) {
+    if (idx === 0) {
       idx = Main.layoutManager.primaryIndex;
-    } else if (idx == Main.layoutManager.primaryIndex) {
+    } else if (idx === Main.layoutManager.primaryIndex) {
       idx = 0;
     }
     this.monitor =
-      Main.layoutManager.monitors[idx] || Main.layoutManager.primaryMonitor;
+      monitors[idx] || Main.layoutManager.primaryMonitor || monitors[0];
 
     if (this.popup_at_cursor_monitor) {
-      let pointer = global.get_pointer();
-      Main.layoutManager.monitors.forEach((m) => {
-        if (
-          pointer[0] >= m.x &&
-          pointer[0] <= m.x + m.width &&
-          pointer[1] >= m.y &&
-          pointer[1] <= m.y + m.height
-        ) {
-          this.monitor = m;
+      try {
+        const pointer = global.get_pointer();
+        for (const m of monitors) {
+          if (
+            pointer[0] >= m.x &&
+            pointer[0] <= m.x + m.width &&
+            pointer[1] >= m.y &&
+            pointer[1] <= m.y + m.height
+          ) {
+            this.monitor = m;
+            break;
+          }
         }
-      });
+      } catch (err) {
+        console.log(`search-light: pointer query failed: ${err}`);
+      }
     }
 
+    if (!this.monitor) return;
     this.sw = this.monitor.width;
     this.sh = this.monitor.height;
 
-    if (this._last_monitor_count != Main.layoutManager.monitors.length) {
-      this._settings.set_int(
-        'monitor-count',
-        Main.layoutManager.monitors.length,
-      );
-      this._last_monitor_count = Main.layoutManager.monitors.length;
+    if (this._last_monitor_count !== monitors.length) {
+      try {
+        this._settings?.set_int('monitor-count', monitors.length);
+      } catch (err) {
+        console.log(`search-light: cannot store monitor-count: ${err}`);
+      }
+      this._last_monitor_count = monitors.length;
     }
   }
 
   _acquire_ui() {
-    if (this._entry) return;
+    if (this._entry || !this.container) return;
+    // Overview may be mid-teardown during logout; bail instead of throwing.
+    if (!Main.overview?.searchEntry || !Main.overview?.searchController) {
+      console.log('search-light: overview search UI unavailable; skipping');
+      return;
+    }
 
     if (!Main.overview._toggle) {
       Main.overview._toggle = Main.overview.toggle;
     }
     Main.overview.toggle = () => {
-      if (this._search && this._search.visible) {
-        this._search._text.get_parent().grab_key_focus();
+      try {
+        if (this._search?.visible) {
+          this._search._text?.get_parent()?.grab_key_focus();
+        }
+      } catch (err) {
+        console.log(`search-light: overview toggle forward failed: ${err}`);
       }
     };
     if (!Main.overview._hide) {
       Main.overview._hide = Main.overview.hide;
     }
     Main.overview.hide = () => {
-      this.mainContainer.opacity = 0;
+      try {
+        if (this.mainContainer) this.mainContainer.opacity = 0;
+      } catch {
+        // Container already destroyed.
+      }
       Main.overview._hide();
     };
 
     this._queryDisplay();
 
-    this.scaleFactor = St.ThemeContext.get_for_stage(global.stage).scale_factor;
+    try {
+      this.scaleFactor =
+        St.ThemeContext.get_for_stage(global.stage).scale_factor;
+    } catch {
+      this.scaleFactor = 1;
+    }
 
     this._entry = Main.overview.searchEntry;
     this._entryParent = this._entry.get_parent();
-    this._entry.add_style_class_name('slc');
+    try {
+      this._entry.add_style_class_name('slc');
+    } catch (err) {
+      console.log(`search-light: cannot style entry: ${err}`);
+    }
 
     this._search = Main.overview.searchController;
 
-    this._search.hide();
+    try {
+      this._search.hide();
+    } catch (err) {
+      console.log(`search-light: cannot hide overview search: ${err}`);
+    }
     this._searchResults = this._search._searchResults;
     this._searchParent = this._search.get_parent();
+    if (!this._searchResults) {
+      console.log('search-light: no search results container found');
+      return;
+    }
 
     if (!this._searchResults._activateDefault) {
       this._searchResults._activateDefault =
@@ -715,58 +994,118 @@ export default class SearchLightExt extends Extension {
     }
     this._searchResults.activateDefault = () => {
       // hide window immediately when activated
-      this.mainContainer.opacity = 0;
+      try {
+        if (this.mainContainer) this.mainContainer.opacity = 0;
+      } catch {
+        // Already hidden/destroyed.
+      }
       this._searchResults._activateDefault();
     };
 
-    if (this._entry.get_parent()) {
-      this._entry.get_parent().remove_child(this._entry);
+    try {
+      if (this._entry.get_parent()) {
+        this._entry.get_parent().remove_child(this._entry);
+      }
+      this.container.add_child(this._entry);
+      if (this._search.get_parent()) {
+        this._search.get_parent().remove_child(this._search);
+      }
+      this.container.add_child(this._search);
+    } catch (err) {
+      console.log(`search-light: cannot reparent search UI: ${err}`);
+      return;
     }
-    this.container.add_child(this._entry);
-    if (this._search.get_parent()) {
-      this._search.get_parent().remove_child(this._search);
-    }
-    this.container.add_child(this._search);
     if (!this._search.__searchCancelled) {
       this._search.__searchCancelled = this._search._searchCancelled;
       this._search._searchCancelled = () => {};
     }
-    this._search._text.get_parent().grab_key_focus();
-    this._textChangedEventId = this._search._text.connect(
-      'text-changed',
-      () => {
-        this.container.set_size(this.width, this.height);
-        this.mainContainer.set_size(this.width, this.height);
-        if (this._corners) {
-          this._corners[2].y = this.height - this._corners[1].height;
-          this._corners[3].y = this.height - this._corners[1].height;
-          this._edges[3].y = this.height - 2;
-        }
-        this._search.show();
-      },
-    );
+    try {
+      this._search._text?.get_parent()?.grab_key_focus();
+    } catch (err) {
+      console.log(`search-light: cannot focus search entry: ${err}`);
+    }
+    try {
+      this._textChangedEventId = this._search._text.connect(
+        'text-changed',
+        () => {
+          try {
+            this.container?.set_size(this.width, this.height);
+            this.mainContainer?.set_size(this.width, this.height);
+          } catch (err) {
+            console.log(`search-light: resize on text-changed failed: ${err}`);
+          }
+          if (this._corners) {
+            this._corners[2].y = this.height - this._corners[1].height;
+            this._corners[3].y = this.height - this._corners[1].height;
+            this._edges[3].y = this.height - 2;
+          }
+          try {
+            this._search?.show();
+          } catch (err) {
+            console.log(`search-light: search show failed: ${err}`);
+          }
+        },
+      );
+    } catch (err) {
+      console.log(`search-light: cannot watch search text: ${err}`);
+    }
 
-    this._search._text.get_parent().grab_key_focus();
+    try {
+      this._search._text?.get_parent()?.grab_key_focus();
+    } catch {
+      // Focus will land on show() via _toggle_search_light fallback.
+    }
   }
 
   _release_ui() {
     if (this._entry) {
-      if (this._entry.get_parent()) {
-        this._entry.get_parent().remove_child(this._entry);
+      try {
+        if (this._entry.get_parent()) {
+          this._entry.get_parent().remove_child(this._entry);
+        }
+        // _entryParent may be gone during overview teardown (logout).
+        if (this._entryParent) {
+          this._entryParent.add_child(this._entry);
+        }
+        try {
+          this._entry.remove_style_class_name('slc');
+        } catch {
+          // Style class was never applied or actor is finalized.
+        }
+      } catch (err) {
+        console.log(`search-light: cannot restore search entry: ${err}`);
       }
-      this._entryParent.add_child(this._entry);
       this._entry = null;
+      this._entryParent = null;
     }
 
     if (this._search) {
-      this._removeProviders();
-      this._search.hide();
-      if (this._search.get_parent()) {
-        this._search.get_parent().remove_child(this._search);
+      try {
+        this._removeProviders();
+      } catch (err) {
+        console.log(`search-light: remove providers on release: ${err}`);
       }
-      this._searchParent.add_child(this._search);
+      try {
+        this._search.hide();
+      } catch {
+        // Already hidden.
+      }
+      try {
+        if (this._search.get_parent()) {
+          this._search.get_parent().remove_child(this._search);
+        }
+        if (this._searchParent) {
+          this._searchParent.add_child(this._search);
+        }
+      } catch (err) {
+        console.log(`search-light: cannot restore search controller: ${err}`);
+      }
       if (this._textChangedEventId) {
-        this._search._text.disconnect(this._textChangedEventId);
+        try {
+          this._search._text?.disconnect(this._textChangedEventId);
+        } catch {
+          // Text actor already finalized.
+        }
         this._textChangedEventId = null;
       }
       if (this._search.__searchCancelled) {
@@ -775,24 +1114,29 @@ export default class SearchLightExt extends Extension {
       }
       this._search = null;
 
-      if (this._searchResults._activateDefault) {
+      if (this._searchResults?._activateDefault) {
         this._searchResults.activateDefault =
           this._searchResults._activateDefault;
         this._searchResults._activateDefault = null;
       }
+      this._searchResults = null;
+      this._searchParent = null;
     }
 
-    if (Main.overview._toggle) {
+    if (Main.overview?._toggle) {
       Main.overview.toggle = Main.overview._toggle;
       Main.overview._toggle = null;
     }
-    if (Main.overview._hide) {
+    if (Main.overview?._hide) {
       Main.overview.hide = Main.overview._hide;
       Main.overview._hide = null;
     }
   }
 
   _updateCss(disable) {
+    // Called from show() and from settings changes; any of these actors
+    // may be null during enable()/disable() transitions.
+    if (!this.container || !this._background || !this._style) return;
     let bg = this.background_color || [0, 0, 0, 0.5];
     if (this.text_color && this.text_color[3] > 0) {
       this.container.remove_style_class_name('light');
@@ -804,10 +1148,18 @@ export default class SearchLightExt extends Extension {
       }
     }
 
-    this._background.remove_effect_by_name('blur');
+    try {
+      this._background.remove_effect_by_name('blur');
+    } catch {
+      // No blur effect attached; nothing to remove.
+    }
     if (this._blurEffect && this.blur_background) {
-      this._background.add_effect_with_name('blur', this._blurEffect);
-      this._blurEffect.color = bg;
+      try {
+        this._background.add_effect_with_name('blur', this._blurEffect);
+        this._blurEffect.color = bg;
+      } catch (err) {
+        console.log(`search-light: cannot apply blur effect: ${err}`);
+      }
     }
 
     this._background.visible = true;
@@ -834,12 +1186,17 @@ export default class SearchLightExt extends Extension {
       styles.push(`#searchLightBlurredBackground {${ss.join(' ')}}`);
     }
 
-    // ss.push(`\n background-image: url("${bg}");`);
-    if (
+    // Only reference the blurred snapshot once ImageMagick has actually
+    // produced it; otherwise St logs a failed-texture warning every show().
+    // The file:// URI form is required by St's background-image parser.
+    const blurredExists =
       this.blur_background &&
       this.desktop_background_blurred &&
-      this.monitor
-    ) {
+      this.monitor &&
+      Gio.File.new_for_path(this.desktop_background_blurred).query_exists(
+        null,
+      );
+    if (blurredExists) {
       let sw = this.monitor.width;
       let sh = this.monitor.height;
       let ss = [];
@@ -921,29 +1278,49 @@ export default class SearchLightExt extends Extension {
     }
   }
 
-  _add_events() {
-    global.stage.connectObject(
-      'notify::key-focus',
-      this._onKeyFocusChanged.bind(this),
-      'key-press-event',
-      this._onKeyPressed.bind(this),
-      this,
-    );
+  /**
+   * Wire focus/key handlers for the visible popup only. Uses explicit
+   * signal IDs (not connectObject) so _removeTransientEvents() can drop
+   * exactly these four handlers without touching the persistent
+   * overview/app/window-created signals from enable(). Guarded against
+   * double-show: a second show() before hide() is a no-op.
+   */
+  _addTransientEvents() {
+    if (this._transientIds?.length) return;
+    this._transientIds = [];
+    const track = (obj, ...args) => {
+      try {
+        const id = obj?.connect?.(...args);
+        if (id) this._transientIds.push([obj, id]);
+      } catch (err) {
+        console.log(`search-light: cannot connect ${args[0]}: ${err}`);
+      }
+    };
+    track(global.stage, 'notify::key-focus', this._onKeyFocusChanged.bind(this));
+    track(global.stage, 'key-press-event', this._onKeyPressed.bind(this));
+    track(global.display, 'notify::focus-window', this._onFocusWindow.bind(this));
+    track(global.display, 'in-fullscreen-changed', this._onFullScreen.bind(this));
+  }
 
-    global.display.connectObject(
-      'notify::focus-window',
-      this._onFocusWindow.bind(this),
-      'in-fullscreen-changed',
-      this._onFullScreen.bind(this),
-      this,
-    );
+  _removeTransientEvents() {
+    for (const [obj, id] of this._transientIds || []) {
+      try {
+        obj?.disconnect?.(id);
+      } catch {
+        // Actor already destroyed; safe to ignore.
+      }
+    }
+    this._transientIds = [];
+  }
+
+  // Kept as thin aliases so third-party patches calling the old names keep
+  // working; both now operate on transient signals only.
+  _add_events() {
+    this._addTransientEvents();
   }
 
   _remove_events() {
-    global.display.disconnectObject(this);
-    global.stage.disconnectObject(this);
-    Main.overview.disconnectObject(this);
-    Shell.AppSystem.get_default().disconnectObject(this);
+    this._removeTransientEvents();
   }
 
   _onOverviewShowing() {
@@ -956,47 +1333,75 @@ export default class SearchLightExt extends Extension {
 
   _onAppStateChanged(st) {
     this._lastAppState = st;
-    if (this._visible) {
-      this.mainContainer.opacity = 0;
+    if (this._visible && this.mainContainer) {
+      try {
+        this.mainContainer.opacity = 0;
+      } catch {
+        // Container finalized during app launch; hide() will follow.
+      }
     }
   }
 
   _hidePopups() {
-    let popup = this._lastPopup;
+    const popup = this._lastPopup;
     this._lastPopup = null;
+    if (!popup || !this._hiTimer) return;
     try {
-      if (!popup.close && popup._getTopMenu()) {
-        popup = popup._getTopMenu();
+      let target = popup;
+      if (!target.close && target._getTopMenu) {
+        target = target._getTopMenu() || target;
       }
+      if (!target) return;
 
       // elaborate way of hiding the popup
-      popup.opacity = 0;
+      target.opacity = 0;
       this._startupSeq = this._hiTimer.runSequence([
         {
           func: () => {
-            popup.opacity = 0;
+            try {
+              target.opacity = 0;
+            } catch {
+              // Popup finalized mid-sequence.
+            }
           },
           delay: 0,
         },
         {
           func: () => {
-            popup._delegate.close(false);
+            try {
+              target._delegate?.close(false);
+            } catch (err) {
+              console.log(`search-light: popup close failed: ${err}`);
+            }
           },
           delay: 250,
         },
       ]);
     } catch (err) {
-      console.log(err);
+      console.log(`search-light: hide popups failed: ${err}`);
     }
   }
 
   _onFocusWindow(w, e) {}
 
   _onKeyFocusChanged(previous) {
-    if (!this._entry) return;
-    let focus = global.stage.get_key_focus();
-    let appearFocused =
-      focus && (this._entry.contains(focus) || this._searchResults.contains(focus));
+    if (!this._entry || !this._visible) return;
+    let focus = null;
+    try {
+      focus = global.stage.get_key_focus();
+    } catch {
+      return;
+    }
+    let appearFocused = false;
+    try {
+      appearFocused =
+        !!focus &&
+        (this._entry.contains(focus) ||
+          this._searchResults?.contains?.(focus));
+    } catch {
+      // Actors mid-destruction report contains() errors; treat as unfocused.
+      appearFocused = false;
+    }
 
     if (!appearFocused) {
       // popups are not handled well.. hide immediately
@@ -1010,6 +1415,7 @@ export default class SearchLightExt extends Extension {
       }
 
       this.hide();
+      return;
     }
 
     // hide window immediately when activated
@@ -1017,7 +1423,11 @@ export default class SearchLightExt extends Extension {
       if (!focus._activate) {
         focus._activate = focus.activate;
         focus.activate = () => {
-          this.mainContainer.opacity = 0;
+          try {
+            if (this.mainContainer) this.mainContainer.opacity = 0;
+          } catch {
+            // Already hidden.
+          }
           focus._activate();
         };
       }
@@ -1025,20 +1435,29 @@ export default class SearchLightExt extends Extension {
   }
 
   _onKeyPressed(obj, evt) {
-    if (!this._entry) return;
-    let focus = global.stage.get_key_focus();
-    if (!focus || !this._entry.contains(focus)) {
-      if (evt.get_key_symbol() === Clutter.KEY_Escape) {
-        this.hide();
-        return Clutter.EVENT_STOP;
+    if (!this._entry || !this._search) return Clutter.EVENT_PROPAGATE;
+    let focus = null;
+    try {
+      focus = global.stage.get_key_focus();
+    } catch {
+      return Clutter.EVENT_STOP;
+    }
+    try {
+      if (!focus || !this._entry.contains(focus)) {
+        if (evt.get_key_symbol() === Clutter.KEY_Escape) {
+          this.hide();
+          return Clutter.EVENT_STOP;
+        }
+        this._search._text?.get_parent()?.grab_key_focus();
       }
-      this._search._text.get_parent().grab_key_focus();
+    } catch (err) {
+      console.log(`search-light: key handling failed: ${err}`);
     }
 
     return Clutter.EVENT_STOP;
   }
 
   _onFullScreen() {
-    this.hide();
+    if (this._visible) this.hide();
   }
 }

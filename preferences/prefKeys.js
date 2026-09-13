@@ -206,9 +206,17 @@ export let PrefKeys = class {
   }
 
   disconnectSettings() {
-    this._settingsListeners.forEach((id) => {
-      this._settings.disconnect(id);
-    });
+    if (!this._settingsListeners?.length || !this._settings) {
+      this._settingsListeners = [];
+      return;
+    }
+    for (const id of this._settingsListeners) {
+      try {
+        this._settings.disconnect(id);
+      } catch {
+        // Signal already disconnected during prefs-window teardown.
+      }
+    }
     this._settingsListeners = [];
   }
 

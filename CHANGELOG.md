@@ -1,5 +1,17 @@
 ## ROADMAP
 
+## release 102 (GNOME 50 hardening, tested on Fedora 44 / GNOME 50.4 Wayland)
+
+* confirm GNOME 50 support: no shell-50 API breakage (only metadata bump needed)
+* fix transient/persistent signal lifecycle: hide() no longer kills overview/app/display handlers
+* guard compositor unredirect for Wayland/no-op Mutter builds
+* watch both picture-uri and picture-uri-dark for blurred background
+* resolve file:// wallpaper URIs and prefer `magick` over deprecated `convert`
+* only set blurred background-image after the snapshot file exists
+* fix accelerator leak: ungrab with numeric action id, idempotent enable/disable
+* idempotent disable(): every teardown step guarded, overview patches restored
+* null-safe acquire/release of searchEntry/searchController across 48/49/50
+
 ## release 38
 
 * fork gnome 48 from 47
