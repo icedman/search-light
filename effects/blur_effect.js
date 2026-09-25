@@ -3,7 +3,7 @@
 import Shell from 'gi://Shell';
 import GLib from 'gi://GLib';
 import GObject from 'gi://GObject';
-import Clutter from 'gi://Clutter';
+import { ShaderEffect } from './shader_effect.js';
 
 const getTintShaderSource = (extensionDir) => {
   const SHADER_PATH = GLib.build_filenamev([
@@ -22,7 +22,7 @@ const getTintShaderSource = (extensionDir) => {
 
 export const BlurEffect = GObject.registerClass(
   {},
-  class SearchLighBlurEffect extends Clutter.ShaderEffect {
+  class SearchLighBlurEffect extends ShaderEffect {
     _init(params) {
       this._red = null;
       this._green = null;
