@@ -5,7 +5,7 @@
 import Shell from 'gi://Shell';
 import GLib from 'gi://GLib';
 import GObject from 'gi://GObject';
-import Clutter from 'gi://Clutter';
+import { ShaderEffect } from './shader_effect.js';
 
 const getTintShaderSource = (extensionDir) => {
   const SHADER_PATH = GLib.build_filenamev([
@@ -33,7 +33,7 @@ const getTintShaderSource = (extensionDir) => {
 /// https://gjs-docs.gnome.org/clutter10~10_api/clutter.shadereffect
 export const TintEffect = GObject.registerClass(
   {},
-  class SearchLightTintEffect extends Clutter.ShaderEffect {
+  class SearchLightTintEffect extends ShaderEffect {
     _init(params) {
       this._red = null;
       this._green = null;
