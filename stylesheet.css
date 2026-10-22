@@ -75,3 +75,28 @@
   padding-left: 12px;
   padding-right: 12px;
 }
+
+#searchLightApps {
+  padding: 0 12px;
+}
+
+#searchLightBox .search-light-app {
+  width: 80px;
+  height: 80px;
+  margin: 4px;
+  padding: 4px;
+  border-radius: 12px;
+}
+
+#searchLightBox .search-light-app:hover {
+  background-color: rgba(128,128,128,0.2);
+}
+
+#searchLightBox .search-light-app:focus {
+  background-color: rgba(128,128,128,0.4);
+}
+
+#searchLightBox .search-light-app-label {
+  font-size: 9pt;
+  margin-top: 6px;
+}
