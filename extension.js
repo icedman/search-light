@@ -19,6 +19,7 @@
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as DND from 'resource:///org/gnome/shell/ui/dnd.js';
+import * as AppFavorites from 'resource:///org/gnome/shell/ui/appFavorites.js';
 import Meta from 'gi://Meta';
 import Shell from 'gi://Shell';
 import Gio from 'gi://Gio';
@@ -460,6 +461,8 @@ export default class SearchLightExt extends Extension {
     this._animSeq = this._hiTimer.runOnce(() => {
       this._animSeq = null;
       this._layout();
+      this._createQuickApps();
+      this._updateQuickApps();
       // animate after adjust so width+height are correct
       if (this._useAnimations) {
         this.mainContainer.opacity = 0;
@@ -489,8 +492,16 @@ export default class SearchLightExt extends Extension {
       return;
     }
 
-    this._release_ui();
+    // a pending show() step would run against the released ui
+    if (this._animSeq) {
+      this._hiTimer.cancel(this._animSeq);
+      this._animSeq = null;
+    }
+
+    // disconnect first: releasing the ui moves key focus, and the focus
+    // handler would call hide() again while clutter is still unmapping
     this._remove_events();
+    this._release_ui();
 
     if (this._useAnimations) {
       this.mainContainer.ease({
@@ -732,18 +743,177 @@ export default class SearchLightExt extends Extension {
     this._textChangedEventId = this._search._text.connect(
       'text-changed',
       () => {
-        this.container.set_size(this.width, this.height);
-        this.mainContainer.set_size(this.width, this.height);
-        if (this._corners) {
-          this._corners[2].y = this.height - this._corners[1].height;
-          this._corners[3].y = this.height - this._corners[1].height;
-          this._edges[3].y = this.height - 2;
-        }
-        this._search.show();
+        this._expand();
+        this._updateQuickApps();
       },
+    );
+    // the overview's own handler lets Down/Tab through when the entry is empty
+    this._entryKeyPressEventId = this._search._text.connect(
+      'key-press-event',
+      this._onEntryKeyPressed.bind(this),
     );
 
     this._search._text.get_parent().grab_key_focus();
+  }
+
+  _expand() {
+    this.container.set_size(this.width, this.height);
+    this.mainContainer.set_size(this.width, this.height);
+    if (this._corners) {
+      this._corners[2].y = this.height - this._corners[1].height;
+      this._corners[3].y = this.height - this._corners[1].height;
+      this._edges[3].y = this.height - 2;
+    }
+  }
+
+  // pinned dash apps, then the most used ones, then every other app by name
+  _collectQuickApps() {
+    let apps = [];
+    let ids = new Set();
+    let add = (app) => {
+      if (app && !ids.has(app.get_id())) {
+        ids.add(app.get_id());
+        apps.push(app);
+      }
+    };
+    AppFavorites.getAppFavorites().getFavorites().forEach(add);
+    Shell.AppUsage.get_default().get_most_used().forEach(add);
+
+    let appSystem = Shell.AppSystem.get_default();
+    appSystem
+      .get_installed()
+      .filter((info) => info.should_show())
+      .map((info) => appSystem.lookup_app(info.get_id()))
+      .filter((app) => app)
+      .sort((a, b) => a.get_name().localeCompare(b.get_name()))
+      .forEach(add);
+    return apps;
+  }
+
+  _createQuickApps() {
+    this._destroyQuickApps();
+    if (!this._search) return;
+
+    // tile = .search-light-app content (80) + padding (2*4) + margin (2*4)
+    let tile = 96 * this.scaleFactor;
+    let cols = Math.floor((this.width - 24 * this.scaleFactor) / tile);
+    let rows = Math.floor(
+      (this.height - this.initial_height - 20 * this.scaleFactor) / tile,
+    );
+    if (cols < 1 || rows < 1) return;
+
+    let apps = this._collectQuickApps().slice(0, cols * rows);
+    if (!apps.length) return;
+
+    this._quickApps = new St.BoxLayout({
+      name: 'searchLightApps',
+      vertical: true,
+      x_expand: true,
+    });
+    for (let i = 0; i < apps.length; i += cols) {
+      let row = new St.BoxLayout({ x_align: Clutter.ActorAlign.CENTER });
+      apps.slice(i, i + cols).forEach((app) => {
+        row.add_child(this._createQuickAppButton(app));
+      });
+      this._quickApps.add_child(row);
+    }
+    // above the search results, which keep their space once shown
+    this.container.insert_child_above(this._quickApps, this._entry);
+  }
+
+  _createQuickAppButton(app) {
+    let icon = app.create_icon_texture(48);
+    icon.x_align = Clutter.ActorAlign.CENTER;
+    let label = new St.Label({
+      text: app.get_name(),
+      style_class: 'search-light-app-label',
+      x_align: Clutter.ActorAlign.CENTER,
+    });
+    let box = new St.BoxLayout({
+      vertical: true,
+      y_align: Clutter.ActorAlign.CENTER,
+    });
+    box.add_child(icon);
+    box.add_child(label);
+
+    let button = new St.Button({
+      style_class: 'search-light-app',
+      child: box,
+      can_focus: true,
+      track_hover: true,
+    });
+    button.connect('clicked', () => {
+      app.activate();
+      this.hide();
+    });
+    return button;
+  }
+
+  _destroyQuickApps() {
+    if (this._quickApps) {
+      this._quickApps.destroy();
+      this._quickApps = null;
+    }
+  }
+
+  // empty entry shows the quick apps, any text shows the search results.
+  // Never hide this._search while the popup is up: its vfunc_unmap() resets
+  // the search and drops key focus, which re-enters hide() mid-unmap.
+  // Hiding the results view inside it has no such side effect.
+  _updateQuickApps() {
+    if (!this._search) return;
+    let empty = this._search._text.text === '';
+    let showApps = !!this._quickApps && empty;
+    if (this._quickApps) {
+      this._quickApps.visible = showApps;
+    }
+    this._searchResults.visible = !showApps;
+    if (showApps) {
+      this._expand();
+    }
+    if (!empty) {
+      this._search.show();
+    }
+  }
+
+  _onEntryKeyPressed(actor, evt) {
+    if (!this._quickApps || !this._quickApps.visible) {
+      return Clutter.EVENT_PROPAGATE;
+    }
+    let symbol = evt.get_key_symbol();
+    if (symbol === Clutter.KEY_Down || symbol === Clutter.KEY_Tab) {
+      this._quickApps.navigate_focus(null, St.DirectionType.TAB_FORWARD, false);
+      return Clutter.EVENT_STOP;
+    }
+    return Clutter.EVENT_PROPAGATE;
+  }
+
+  _onQuickAppsKeyPressed(focus, evt) {
+    let symbol = evt.get_key_symbol();
+    let direction = {
+      [Clutter.KEY_Left]: St.DirectionType.LEFT,
+      [Clutter.KEY_Right]: St.DirectionType.RIGHT,
+      [Clutter.KEY_Up]: St.DirectionType.UP,
+      [Clutter.KEY_Down]: St.DirectionType.DOWN,
+      [Clutter.KEY_Tab]: St.DirectionType.TAB_FORWARD,
+      [Clutter.KEY_ISO_Left_Tab]: St.DirectionType.TAB_BACKWARD,
+    }[symbol];
+    if (direction !== undefined) {
+      let moved = this._quickApps.navigate_focus(focus, direction, false);
+      // past the first row goes back to the entry
+      if (!moved && direction === St.DirectionType.UP) {
+        this._search._text.get_parent().grab_key_focus();
+      }
+      return Clutter.EVENT_STOP;
+    }
+
+    // typing while an app is focused starts the search
+    let unichar = evt.get_key_unicode();
+    this._search._text.get_parent().grab_key_focus();
+    if (unichar && unichar >= ' ' && unichar !== '\x7f') {
+      this._search._text.insert_unichar(unichar);
+    }
+    return Clutter.EVENT_STOP;
   }
 
   _release_ui() {
@@ -753,6 +923,12 @@ export default class SearchLightExt extends Extension {
       }
       this._entryParent.add_child(this._entry);
       this._entry = null;
+    }
+
+    this._destroyQuickApps();
+    // the results view belongs to the overview
+    if (this._searchResults) {
+      this._searchResults.visible = true;
     }
 
     if (this._search) {
@@ -765,6 +941,10 @@ export default class SearchLightExt extends Extension {
       if (this._textChangedEventId) {
         this._search._text.disconnect(this._textChangedEventId);
         this._textChangedEventId = null;
+      }
+      if (this._entryKeyPressEventId) {
+        this._search._text.disconnect(this._entryKeyPressEventId);
+        this._entryKeyPressEventId = null;
       }
       if (this._search.__searchCancelled) {
         this._search._searchCancelled = this._search.__searchCancelled;
@@ -981,7 +1161,9 @@ export default class SearchLightExt extends Extension {
     if (!this._entry) return;
     let focus = global.stage.get_key_focus();
     let appearFocused =
-      this._entry.contains(focus) || this._searchResults.contains(focus);
+      this._entry.contains(focus) ||
+      this._searchResults.contains(focus) ||
+      (this._quickApps && this._quickApps.contains(focus));
 
     if (!appearFocused) {
       // popups are not handled well.. hide immediately
@@ -1016,6 +1198,9 @@ export default class SearchLightExt extends Extension {
       if (evt.get_key_symbol() === Clutter.KEY_Escape) {
         this.hide();
         return Clutter.EVENT_STOP;
+      }
+      if (this._quickApps && this._quickApps.contains(focus)) {
+        return this._onQuickAppsKeyPressed(focus, evt);
       }
       this._search._text.get_parent().grab_key_focus();
     }
