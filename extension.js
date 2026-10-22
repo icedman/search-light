@@ -489,8 +489,16 @@ export default class SearchLightExt extends Extension {
       return;
     }
 
-    this._release_ui();
+    // a pending show() step would run against the released ui
+    if (this._animSeq) {
+      this._hiTimer.cancel(this._animSeq);
+      this._animSeq = null;
+    }
+
+    // disconnect first: releasing the ui moves key focus, and the focus
+    // handler would call hide() again while clutter is still unmapping
     this._remove_events();
+    this._release_ui();
 
     if (this._useAnimations) {
       this.mainContainer.ease({
