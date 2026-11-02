@@ -462,6 +462,8 @@ export default class SearchLightExt extends Extension {
     // fixes the background size relative to text - after adjusting font size
     this._animSeq = this._hiTimer.runOnce(() => {
       this._animSeq = null;
+      // the ui may have been released by hide() before this step ran
+      if (!this._entry) return;
       this._layout();
       // animate after adjust so width+height are correct
       if (this._useAnimations) {

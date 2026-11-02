@@ -138,7 +138,14 @@ export const Timer = class {
 
     this._subscribers.forEach((s) => {
       if (s.onUpdate) {
-        s.onUpdate(s, this._resolution);
+        // an exception escaping this GLib source callback would remove the
+        // source while _timeoutId stays set, so is_running() keeps returning
+        // true and start() never re-adds it: the timer stops for good.
+        try {
+          s.onUpdate(s, this._resolution);
+        } catch (e) {
+          console.error(e);
+        }
       }
     });
 
@@ -285,8 +292,9 @@ export const Timer = class {
       onUpdate: (s, dt) => {
         s._time += dt;
         if (s._time >= s._delay) {
-          s._func(s);
+          // unsubscribe first so a throwing func is not retried every tick
           this.unsubscribe(s);
+          s._func(s);
         }
       },
     };
