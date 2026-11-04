@@ -162,6 +162,8 @@ export default class SearchLightExt extends Extension {
       this
     );
 
+    this._unredirectDisabled = false;
+
     this.mainContainer = new SearchLight();
     this.mainContainer._delegate = this;
     this.container = new St.BoxLayout({
@@ -435,7 +437,7 @@ export default class SearchLightExt extends Extension {
     this._updateCss();
     this._layout();
 
-    global.compositor.disable_unredirect();
+    this._setUnredirect(true);
 
     this.mainContainer.show();
     this.container.show();
@@ -469,6 +471,18 @@ export default class SearchLightExt extends Extension {
     }, 100);
   }
 
+  // Keeps the compositor unredirect state balanced. hide() is reachable from
+  // many paths (focus change, Escape, fullscreen, init) even when the overlay
+  // was never shown; the old code called enable_unredirect() unconditionally
+  // and produced "Called enable_unredirect_for_display while unredirection is
+  // enabled" whenever an unrelated window changed focus.
+  _setUnredirect(disabled) {
+    if (this._unredirectDisabled === disabled) return;
+    this._unredirectDisabled = disabled;
+    if (disabled) global.compositor.disable_unredirect();
+    else global.compositor.enable_unredirect();
+  }
+
   hide() {
     if (this._isDraggingIcon()) {
       return;
@@ -489,14 +503,14 @@ export default class SearchLightExt extends Extension {
         onComplete: () => {
           this._visible = false;
           this.mainContainer.hide();
-          global.compositor.enable_unredirect();
+          this._setUnredirect(false);
         },
       });
     } else {
       this.mainContainer.opacity = 0;
       this._visible = false;
       this.mainContainer.hide();
-      global.compositor.enable_unredirect();
+      this._setUnredirect(false);
     }
     // this._hidePopups();
   }
