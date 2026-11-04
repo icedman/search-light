@@ -162,6 +162,8 @@ export default class SearchLightExt extends Extension {
       this
     );
 
+    this._unredirectDisabled = false;
+
     this.mainContainer = new SearchLight();
     this.mainContainer._delegate = this;
     this.container = new St.BoxLayout({
@@ -197,10 +199,14 @@ export default class SearchLightExt extends Extension {
     this._useAnimations = this._settings.get_boolean('use-animations');
     this._animationSpeed = this._settings.get_double('animation-speed');
 
+    // Overview signals are named 'showing'/'shown'/'hiding'/'hidden'
+    // (see overview.js OVERVIEW_SHOWN_TRANSITIONS). The old 'overview-showing'
+    // / 'overview-hidden' names never fired, so _inOverview was never set and
+    // the "already in the overview" guard was dead code.
     Main.overview.connectObject(
-      'overview-showing',
+      'showing',
       this._onOverviewShowing.bind(this),
-      'overview-hidden',
+      'hiding',
       this._onOverviewHidden.bind(this),
       this
     );
@@ -211,14 +217,17 @@ export default class SearchLightExt extends Extension {
       this
     );
 
-    global.display.connectObject(
+    // Raw connect, not connectObject(this): _remove_events() calls
+    // disconnectObject(this) on global.display for the connections that
+    // show() owns, which used to tear this enable()-owned handler down as
+    // well, killing window tracking after the first hide.
+    this._windowCreatedId = global.display.connect(
       'window-created',
       (display, win) => {
         if (this._visible) {
           this.mainContainer.opacity = 0;
         }
-      },
-      this
+      }
     );
 
     this._loTimer.runOnce(() => {
@@ -249,6 +258,15 @@ export default class SearchLightExt extends Extension {
   }
 
   disable() {
+    // Leave a consistent state behind: an interrupted hide no longer strands
+    // _visible at true, but be explicit anyway.
+    this._visible = false;
+
+    if (this._windowCreatedId) {
+      global.display.disconnect(this._windowCreatedId);
+      this._windowCreatedId = null;
+    }
+
     this._hiTimer?.shutdown();
     this._loTimer?.shutdown();
     this._hiTimer = null;
@@ -419,6 +437,8 @@ export default class SearchLightExt extends Extension {
   }
 
   show() {
+    if (!this.mainContainer) return;
+    if (this._visible) return;
     if (Main.overview.visible) return;
 
     if (this._animSeq) {
@@ -435,15 +455,24 @@ export default class SearchLightExt extends Extension {
     this._updateCss();
     this._layout();
 
-    global.compositor.disable_unredirect();
+    this._setUnredirect(true);
 
     this.mainContainer.show();
     this.container.show();
+    // Authoritative commit point. _layout() used to set this as a side
+    // effect, which meant a hide() during the deferred animation below (or
+    // an early _layout() return) could leave _visible disagreeing with what
+    // is actually on screen - and the next accelerator press then did
+    // nothing at all (issues #129, #146).
+    this._visible = true;
     this._add_events();
 
     // fixes the background size relative to text - after adjusting font size
     this._animSeq = this._hiTimer.runOnce(() => {
       this._animSeq = null;
+      // The overlay may have been dismissed while this was pending; do not
+      // resurrect it.
+      if (!this._visible) return;
       this._layout();
       // animate after adjust so width+height are correct
       if (this._useAnimations) {
@@ -469,36 +498,92 @@ export default class SearchLightExt extends Extension {
     }, 100);
   }
 
+  // Keeps the compositor unredirect state balanced. hide() is reachable from
+  // many paths (focus change, Escape, fullscreen, init) even when the overlay
+  // was never shown; the old code called enable_unredirect() unconditionally
+  // and produced "Called enable_unredirect_for_display while unredirection is
+  // enabled" whenever an unrelated window changed focus.
+  _setUnredirect(disabled) {
+    if (this._unredirectDisabled === disabled) return;
+    this._unredirectDisabled = disabled;
+    if (disabled) global.compositor.disable_unredirect();
+    else global.compositor.enable_unredirect();
+  }
+
   hide() {
+    if (!this.mainContainer) return;
     if (this._isDraggingIcon()) {
       return;
     }
 
-    this._release_ui();
-    this._remove_events();
+    // Reentrancy guard. hide() is reachable from the accelerator, from
+    // 'notify::key-focus', from fullscreen changes and from app-state changes.
+    // Detaching the search entry from the popup container changes key focus,
+    // which emits 'notify::key-focus' *synchronously*, so _release_ui() used
+    // to re-enter this method in the middle of itself: the nested call removed
+    // the same child again while Clutter was already unmapping the actor.
+    //
+    //   clutter_actor_set_mapped: assertion '!CLUTTER_ACTOR_IN_MAP_UNMAP' failed
+    //   Clutter:ERROR:clutter-actor.c:1982:clutter_actor_real_unrealize:
+    //       assertion failed: (!clutter_actor_is_mapped (self))
+    //   Bail out!
+    //
+    // That is a SIGABRT, which takes the whole shell and the session with it.
+    if (this._hiding) return;
+    this._hiding = true;
 
-    if (this._useAnimations) {
-      this.mainContainer.ease({
-        opacity: 0,
-        scale_x: 0.9,
-        scale_y: 0.9,
-        translation_x: (this.width * 0.1) / 2,
-        translation_y: (this.height * 0.1) / 2,
-        duration: this._animationSpeed,
-        mode: Clutter.AnimationMode.EASE_OUT,
-        onComplete: () => {
-          this._visible = false;
-          this.mainContainer.hide();
-          global.compositor.enable_unredirect();
-        },
-      });
-    } else {
-      this.mainContainer.opacity = 0;
+    try {
+      // Cancel the pending show-animation first: it re-runs _layout() and would
+      // otherwise run against a UI that is already released here.
+      if (this._animSeq) {
+        this._hiTimer.cancel(this._animSeq);
+        this._animSeq = null;
+      }
+
+      // Commit the state up front. Clutter's ease() only invokes onComplete
+      // when the transition actually finishes, so an interrupted hide left
+      // _visible at true while the UI was already gone: the next Super+Space
+      // took the "already open" branch and cleared key focus without ever
+      // hiding anything. That is the "shortcut randomly stops working" bug.
       this._visible = false;
-      this.mainContainer.hide();
-      global.compositor.enable_unredirect();
+      this._setUnredirect(false);
+
+      // Disconnect the stage handlers BEFORE touching the entry: while
+      // 'notify::key-focus' is still connected, moving the entry re-enters
+      // _onKeyFocusChanged() -> hide().
+      this._remove_events();
+      this._release_ui();
+
+      if (this._useAnimations) {
+        this.mainContainer.ease({
+          opacity: 0,
+          scale_x: 0.9,
+          scale_y: 0.9,
+          translation_x: (this.width * 0.1) / 2,
+          translation_y: (this.height * 0.1) / 2,
+          duration: this._animationSpeed,
+          mode: Clutter.AnimationMode.EASE_OUT,
+          // onStopped runs for interrupted transitions as well, so the actor
+          // always ends up hidden. Guard on _visible: with autorepeat (holding
+          // the accelerator, see #146) or a fast double press, show() can run
+          // while this transition is still pending. Hiding here unconditionally
+          // would then hide the popup that was just opened - and since
+          // _acquire_ui() moved the overview's search entry into that container,
+          // the result was a leftover box with no working entry that could only
+          // be cleared by toggling the extension.
+          onStopped: () => {
+            if (this.mainContainer && !this._visible)
+              this.mainContainer.hide();
+          },
+        });
+      } else {
+        this.mainContainer.opacity = 0;
+        this.mainContainer.hide();
+      }
+      // this._hidePopups();
+    } finally {
+      this._hiding = false;
     }
-    // this._hidePopups();
   }
 
   _isDraggingIcon() {
@@ -562,7 +647,9 @@ export default class SearchLightExt extends Extension {
     // position
     let x = this.monitor.x + this.sw / 2 - this.width / 2;
     let y = this.monitor.y + this.sh / 2 - this.height / 2;
-    this._visible = true;
+    // Deliberately NOT setting this._visible here any more: _layout() is a
+    // layout pass, and setting state as a side effect of it is what allowed
+    // it to disagree with the actual widget visibility.
 
     this.container.set_size(this.width, this.initial_height);
     this.mainContainer.set_size(this.width, this.initial_height);
@@ -663,7 +750,7 @@ export default class SearchLightExt extends Extension {
     }
 
     if (!disable) {
-      this.accel.listenFor(shortcut, this._toggle_search_light.bind(this));
+      this._grab(this.accel, shortcut, 3);
     }
   }
 
@@ -681,8 +768,32 @@ export default class SearchLightExt extends Extension {
     }
 
     if (!disable) {
-      this.accel2.listenFor(shortcut, this._toggle_search_light.bind(this));
+      this._grab(this.accel2, shortcut, 3);
     }
+  }
+
+  // Grabbing can fail transiently: another client may be holding the combo
+  // (a browser starting up, a game with a raw grab, or the shell itself during
+  // a session-mode reload around screen lock). The old code logged one line
+  // and gave up, leaving an extension that looked enabled but had no working
+  // shortcut until it was toggled by hand. Retry a few times with backoff.
+  _grab(accel, shortcut, retries) {
+    if (!accel) return;
+
+    const action = accel.listenFor(
+      shortcut,
+      this._toggle_search_light.bind(this)
+    );
+    if (action !== null) return;
+
+    if (retries <= 0 || !this._loTimer) {
+      console.log(
+        `search-light: giving up on ${shortcut} after repeated failed grabs`
+      );
+      return;
+    }
+
+    this._loTimer.runOnce(() => this._grab(accel, shortcut, retries - 1), 500);
   }
 
   _queryDisplay() {
@@ -798,30 +909,36 @@ export default class SearchLightExt extends Extension {
   }
 
   _release_ui() {
-    if (this._entry) {
-      if (this._entry.get_parent()) {
-        this._entry.get_parent().remove_child(this._entry);
+    // Take the references out before detaching anything. Moving the entry
+    // emits 'notify::key-focus' synchronously, and even with the guard in
+    // hide() a re-entrant caller must never be able to detach the same actor
+    // twice - that is what tripped Clutter's map/unmap assertions.
+    const entry = this._entry;
+    this._entry = null;
+    if (entry) {
+      if (entry.get_parent()) {
+        entry.get_parent().remove_child(entry);
       }
-      this._entryParent.add_child(this._entry);
-      this._entry = null;
+      this._entryParent.add_child(entry);
     }
 
-    if (this._search) {
+    const search = this._search;
+    this._search = null;
+    if (search) {
       this._removeProviders();
-      this._search.hide();
-      if (this._search.get_parent()) {
-        this._search.get_parent().remove_child(this._search);
+      search.hide();
+      if (search.get_parent()) {
+        search.get_parent().remove_child(search);
       }
-      this._searchParent.add_child(this._search);
+      this._searchParent.add_child(search);
       if (this._textChangedEventId) {
-        this._search._text.disconnect(this._textChangedEventId);
+        search._text.disconnect(this._textChangedEventId);
         this._textChangedEventId = null;
       }
-      if (this._search.__searchCancelled) {
-        this._search._searchCancelled = this._search.__searchCancelled;
-        this._search.__searchCancelled = null;
+      if (search.__searchCancelled) {
+        search._searchCancelled = search.__searchCancelled;
+        search.__searchCancelled = null;
       }
-      this._search = null;
 
       if (this._searchResults._activateDefault) {
         this._searchResults.activateDefault =
@@ -927,14 +1044,37 @@ export default class SearchLightExt extends Extension {
   }
 
   _toggle_search_light() {
-    if (this._inOverview) return;
-    if (!this._visible) {
-      this.show();
-      if (this._entry) {
-        global.stage.set_key_focus(this._entry);
+    if (!this.mainContainer) return;
+
+    // Autorepeat (holding the accelerator, #146) and fast double presses fire
+    // this repeatedly. Serialise them: re-entering the toggle while a show() or
+    // hide() is still running is what used to leave the state machine and the
+    // actor tree disagreeing.
+    if (this._toggling) return;
+    this._toggling = true;
+
+    try {
+      // While the stock overview is open, show() bails out; the accelerator then
+      // did nothing at all. Dismiss the overview instead so the key always has
+      // an effect.
+      if (Main.overview.visible) {
+        Main.overview.hide();
+        return;
       }
-    } else {
-      global.stage.set_key_focus(null);
+
+      if (!this._visible) {
+        this.show();
+        if (this._entry) {
+          global.stage.set_key_focus(this._entry);
+        }
+      } else {
+        // Hide directly. The old code only cleared key focus and relied on the
+        // 'notify::key-focus' handler to notice and hide, which silently failed
+        // whenever something else held the focus.
+        this.hide();
+      }
+    } finally {
+      this._toggling = false;
     }
   }
 
@@ -957,14 +1097,18 @@ export default class SearchLightExt extends Extension {
   }
 
   _remove_events() {
+    // Only the stage/display connections that show() owns may be dropped
+    // here. This used to also disconnect Main.overview and the app system,
+    // which enable() had connected on `this` - so the first hide() killed the
+    // overview tracking and app-state handling for the rest of the session.
     global.display.disconnectObject(this);
     global.stage.disconnectObject(this);
-    Main.overview.disconnectObject(this);
-    Shell.AppSystem.get_default().disconnectObject(this);
   }
 
   _onOverviewShowing() {
     this._inOverview = true;
+    // Do not let the popup and the overview fight over the same chrome.
+    if (this._visible) this.hide();
   }
 
   _onOverviewHidden() {
