@@ -23,10 +23,14 @@ export const KeyboardShortcuts = class {
   }
 
   listenFor(accelerator, callback) {
+    // Re-grabbing the same accelerator we already hold would leak the previous
+    // action, so release first.
+    this.unlisten();
+
     let action = global.display.grab_accelerator(accelerator, 0);
     if (action == Meta.KeyBindingAction.NONE) {
       console.log(`Unable to grab accelerator ${accelerator}`);
-      return;
+      return null;
     }
 
     let name = Meta.external_binding_name_for_action(action);
@@ -39,14 +43,21 @@ export const KeyboardShortcuts = class {
     };
 
     console.log(`Grabbed ${accelerator}`);
+    return action;
   }
 
   unlisten() {
     if (this._grabbers) {
       Object.keys(this._grabbers).forEach((k) => {
-        Main.wm.removeKeybinding(this._grabbers[k].name, Shell.ActionMode.ALL);
-        // what the post in stackoverflow doesn't show is proper clean.. ungrab!
-        global.display.ungrab_accelerator(k);
+        const grabber = this._grabbers[k];
+        // grabber.name is an "external-grab-N" name, which
+        // Main.wm.removeKeybinding() cannot handle - it only removes
+        // settings-backed bindings, so it returned FALSE and left the
+        // allowKeybinding() entry behind while logging
+        //   Trying to remove non-existent keybinding "external-grab-N"
+        // Do the two things that actually apply to an external grab.
+        Main.wm.allowKeybinding(grabber.name, Shell.ActionMode.NONE);
+        global.display.ungrab_accelerator(parseInt(k, 10));
       });
     }
     this._grabbers = {};
