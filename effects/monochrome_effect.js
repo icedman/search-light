@@ -6,7 +6,7 @@
 import Shell from 'gi://Shell';
 import GLib from 'gi://GLib';
 import GObject from 'gi://GObject';
-import Clutter from 'gi://Clutter';
+import { ShaderEffect } from './shader_effect.js';
 
 const getMonochromeShaderSource = (extensionDir) => {
   const SHADER_PATH = GLib.build_filenamev([
@@ -34,7 +34,7 @@ const getMonochromeShaderSource = (extensionDir) => {
 /// https://gjs-docs.gnome.org/clutter10~10_api/clutter.shadereffect
 export const MonochromeEffect = GObject.registerClass(
   {},
-  class SearchLightMonochromeEffect extends Clutter.ShaderEffect {
+  class SearchLightMonochromeEffect extends ShaderEffect {
     _init(params) {
       this._red = null;
       this._green = null;

@@ -169,9 +169,9 @@ export default class SearchLightExt extends Extension {
     this._animationSpeed = this._settings.get_double('animation-speed');
 
     Main.overview.connectObject(
-      'overview-showing',
+      'showing',
       this._onOverviewShowing.bind(this),
-      'overview-hidden',
+      'hidden',
       this._onOverviewHidden.bind(this),
       this,
     );
@@ -198,10 +198,6 @@ export default class SearchLightExt extends Extension {
 
     Main.overview.searchLight = this;
 
-    let appInfo = Gio.DesktopAppInfo.new_from_filename(
-      `${this.path}/apps/org.gnome.Calculator.desktop`,
-    );
-
     let _providers = [];
 
     // deferred startup for providers
@@ -221,6 +217,18 @@ export default class SearchLightExt extends Extension {
   }
 
   disable() {
+    // give the search entry/results back to the overview if we are open
+    this._remove_events();
+    this._release_ui();
+    this._visible = false;
+
+    Main.overview.disconnectObject(this);
+    Shell.AppSystem.get_default().disconnectObject(this);
+    global.display.disconnectObject(this);
+    if (Main.overview.searchLight === this) {
+      delete Main.overview.searchLight;
+    }
+
     this._hiTimer?.shutdown();
     this._loTimer?.shutdown();
     this._hiTimer = null;
@@ -240,7 +248,9 @@ export default class SearchLightExt extends Extension {
     this._settingsKeys.disconnectSettings();
     this._settings = null;
 
-    this._desktopSettings.disconnectObject();
+    // must pass the same tracker given to connectObject(), otherwise the
+    // picture-uri handler survives disable() and fires on a null object
+    this._desktopSettings.disconnectObject(this);
     this._desktopSettings = null;
 
     if (this.accel) {
@@ -265,7 +275,10 @@ export default class SearchLightExt extends Extension {
     }
 
     Main.layoutManager.removeChrome(this.mainContainer);
+    this.mainContainer.destroy();
     this.mainContainer = null;
+    this.container = null;
+    this.windowEffect = null;
   }
 
   _createIndicator() {
@@ -324,6 +337,7 @@ export default class SearchLightExt extends Extension {
   }
 
   _updateBlurredBackground() {
+    if (!this._desktopSettings) return;
     this.desktop_background = this._desktopSettings.get_string('picture-uri');
     
     let uuid = GLib.get_user_name();
@@ -492,8 +506,11 @@ export default class SearchLightExt extends Extension {
       return;
     }
 
-    this._release_ui();
+    // disconnect key-focus handlers first: moving the focused entry out in
+    // _release_ui() emits notify::key-focus, whose handler calls hide()
+    // again and recurses until gnome-shell aborts
     this._remove_events();
+    this._release_ui();
 
     if (this._useAnimations) {
       this.mainContainer.ease({
@@ -921,13 +938,17 @@ export default class SearchLightExt extends Extension {
     }
   }
 
+  // Signals that only live while the popup is shown. They use their own
+  // tracker object so hide() does not also drop the long-lived signals that
+  // enable() connects to Main.overview, AppSystem and global.display.
   _add_events() {
+    if (!this._uiEvents) this._uiEvents = {};
     global.stage.connectObject(
       'notify::key-focus',
       this._onKeyFocusChanged.bind(this),
       'key-press-event',
       this._onKeyPressed.bind(this),
-      this,
+      this._uiEvents,
     );
 
     global.display.connectObject(
@@ -935,15 +956,15 @@ export default class SearchLightExt extends Extension {
       this._onFocusWindow.bind(this),
       'in-fullscreen-changed',
       this._onFullScreen.bind(this),
-      this,
+      this._uiEvents,
     );
   }
 
   _remove_events() {
-    global.display.disconnectObject(this);
-    global.stage.disconnectObject(this);
-    Main.overview.disconnectObject(this);
-    Shell.AppSystem.get_default().disconnectObject(this);
+    if (!this._uiEvents) return;
+    global.display.disconnectObject(this._uiEvents);
+    global.stage.disconnectObject(this._uiEvents);
+    this._uiEvents = null;
   }
 
   _onOverviewShowing() {
